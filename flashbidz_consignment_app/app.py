@@ -48,7 +48,21 @@ def require_perm(perm_name):
 
 # ---- Flask app setup ----
 app = Flask(__name__)
-app.secret_key = "change-me"  # TODO: put a strong secret here
+
+from flask import g
+
+@app.before_request
+def _attach_company():
+    g.user = None
+    g.company = None
+    uid = session.get("user_id")
+    if uid:
+        u = User.query.get(uid)
+        if u:
+            g.user = u
+            g.company = getattr(u, "company", None)
+
+3
 # --- Money formatting helper ---
 @app.template_filter("money")
 def money_filter(cents):
