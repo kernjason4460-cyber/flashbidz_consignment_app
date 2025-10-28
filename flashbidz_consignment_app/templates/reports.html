@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Reports - FlashBidz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:1100px; margin:0 auto; }
+    h1 { margin:0 0 16px; }
+    .card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.06); margin-bottom:16px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px; }
+    .stat { background:#fff; border-radius:12px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    .stat .num { font-size:24px; font-weight:800; }
+    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
+    th { background:#fafafa; font-weight:700; }
+    .filters { display:flex; gap:10px; align-items:end; margin:12px 0 16px; }
+    input[type="date"] { padding:8px; border-radius:8px; border:1px solid #ddd; }
+    .btn { padding:10px 14px; background:#e60000; color:#fff; border:none; border-radius:8px; font-weight:700; text-decoration:none; cursor:pointer; }
+  </style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+  <main>
+    <h1>Reports</h1>
+
+    <form method="get" action="/reports" class="filters">
+      <div>
+        <label>Start</label><br>
+        <input type="date" name="start" value="{{ summary.start }}">
+      </div>
+      <div>
+        <label>End</label><br>
+        <input type="date" name="end" value="{{ summary.end }}">
+      </div>
+      <div>
+        <br>
+        <button class="btn" type="submit">Apply</button>
+      </div>
+    </form>
+
+    <div class="grid">
+      <div class="stat">
+        <div>Total Items</div>
+        <div class="num">{{ summary.total_items }}</div>
+      </div>
+      <div class="stat">
+        <div>Listed (Available)</div>
+        <div class="num">{{ summary.total_listed }}</div>
+      </div>
+      <div class="stat">
+        <div>Sold (in range)</div>
+        <div class="num">{{ summary.total_sold }}</div>
+      </div>
+      <div class="stat">
+        <div>Total Cost</div>
+        <div class="num">${{ '%.2f'|format(summary.total_cost) }}</div>
+      </div>
+      <div class="stat">
+        <div>Total Sales (in range)</div>
+        <div class="num">${{ '%.2f'|format(summary.total_sales) }}</div>
+      </div>
+      <div class="stat">
+        <div>Profit (Sales − Cost)</div>
+        <div class="num">${{ '%.2f'|format(summary.profit) }}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>By Ownership</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Ownership</th>
+            <th>Items</th>
+            <th>Total Cost</th>
+            <th>Total Sales</th>
+            <th>Profit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in ownership %}
+          <tr>
+            <td>{{ row.ownership|capitalize }}</td>
+            <td>{{ row.count }}</td>
+            <td>${{ '%.2f'|format(row.cost) }}</td>
+            <td>${{ '%.2f'|format(row.sales) }}</td>
+            <td>${{ '%.2f'|format(row.profit) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" style="text-align:center;color:#666">No data yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </main>
+</body>
+</html>
+

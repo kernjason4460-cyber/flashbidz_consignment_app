@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Statements – Summary</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:1100px; margin:0 auto; }
+    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
+    th { background:#fafafa; font-weight:700; }
+    form { margin-bottom:12px; }
+    input { padding:8px; border:1px solid #ddd; border-radius:8px; }
+    .btn { padding:8px 12px; background:#e60000; color:#fff; border-radius:8px; text-decoration:none; }
+  </style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+  <main>
+    <h1>Statements – Summary</h1>
+    <form method="get" action="/statements">
+      From <input type="date" name="from" value="{{ dfrom }}">
+      To <input type="date" name="to" value="{{ dto }}">
+      <button class="btn" type="submit">Filter</button>
+    </form>
+
+    <table>
+      <thead>
+        <tr><th>Consignor</th><th>Items</th><th>Total Sales</th>
+            <th>Total Payout</th><th>House Net</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for cid, g in groups.items() %}
+          <tr>
+            <td>{{ g.consignor.name if g.consignor else 'Unknown' }}</td>
+            <td>{{ g.items|length }}</td>
+            <td>${{ '%.2f'|format(g.totals.sales) }}</td>
+            <td>${{ '%.2f'|format(g.totals.payout) }}</td>
+            <td>${{ '%.2f'|format(g.totals.house) }}</td>
+            <td><a class="btn"
+              href="/consignors/{{ cid }}/statement{% if dfrom or dto %}?{% if dfrom %}from={{ dfrom }}{% endif %}{% if dfrom and dto %}&{% endif %}{% if dto %}to={{ dto }}{% endif %}{% endif %}">View</a></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" style="text-align:center;color:#666">
+            No sold items in this range.
+          </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>
+

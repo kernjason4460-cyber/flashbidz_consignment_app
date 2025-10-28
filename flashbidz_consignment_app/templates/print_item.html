@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ item.title }} - Label</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; padding:24px; background:#fff; }
+    .label { border: 1px solid #ddd; border-radius:8px; width:3in; padding:10px; text-align:center; }
+    .brand { font-weight:700; color:#e60000; font-size:1.1em; margin-bottom:4px; }
+    .title { font-weight:600; margin-bottom:4px; }
+    .sku { color:#333; margin-bottom:8px; }
+    img { width:100%; height:auto; }
+    @media print {
+      body { margin:0; padding:0; }
+      .label { border:none; width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="label">
+    <div class="brand">⚡ FlashBidz</div>
+    <div class="title">{{ item.title }}</div>
+    <div class="sku">SKU: {{ item.sku }}</div>
+    <img src="/barcode/{{ item.sku }}.png" alt="Barcode for {{ item.sku }}">
+    <div>{{ item.category or '' }}</div>
+    {% if item.asking_cents %}<div>Asking: {{ item.asking_cents|money }}</div>{% endif %}
+  </div>
+  <script>window.print()</script>
+</body>
+</html>
+

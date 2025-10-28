@@ -1,0 +1,112 @@
+<form method="get" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+  <input name="s" value="{{ s or '' }}" placeholder="Search title / SKU / notes" style="flex:1;min-width:220px">
+  <select name="status">
+    <option value="">(status)</option>
+    <option value="available" {% if status=='available' %}selected{% endif %}>available</option>
+    <option value="sold" {% if status=='sold' %}selected{% endif %}>sold</option>
+  </select>
+  <select name="ownership">
+    <option value="">(ownership)</option>
+    <option value="owned" {% if ownership=='owned' %}selected{% endif %}>owned</option>
+    <option value="consigned" {% if ownership=='consigned' %}selected{% endif %}>consigned</option>
+  </select>
+  <input name="category" value="{{ category or '' }}" placeholder="Category">
+  <button type="submit">Filter</button>
+</form>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Items - FlashBidz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:1200px; margin:0 auto; }
+    h1 { margin:0 0 16px; }
+    .filters { display:flex; gap:10px; align-items:center; margin-bottom:16px; }
+    select { padding:8px; border-radius:8px; border:1px solid #ddd; }
+    .btn { padding:8px 10px; border-radius:8px; text-decoration:none; background:#e60000; color:#fff; font-weight:700; }
+    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
+    th { background:#fafafa; font-weight:700; }
+    .btn-light { background:#eee; color:#222; font-weight:600; padding:6px 8px; border-radius:8px; text-decoration:none; }
+    .row-actions form { display:inline; }
+  </style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+  <main>
+    <h1>Items</h1>
+<p><a class="btn" href="/items/new">+ New Item</a></p>
+
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>SKU</th>
+          <th>Title</th>
+          <th>Ownership</th>
+          <th>Category</th>
+          <th>Cost</th>
+          <th>Asking</th>
+          <th>Status</th>
+          <th>Sale Price</th>
+          <th>Sale Date</th>
+          <th>Consignor</th>
+          <th>Buyer</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+        <tr>
+          <td>{{ it.id }}</td>
+          <td>{{ it.sku }}</td>
+          <td>{{ it.title }}</td>
+          <td>{{ it.ownership }}</td>
+          <td>{{ it.category or '' }}</td>
+          <td>${{ '%.2f'|format(it.cost) }}</td>
+          <td>${{ '%.2f'|format(it.asking) }}</td>
+          <td>{{ it.status }}</td>
+          <td>{% if it.sale_price_cents %}${{ '%.2f'|format(it.sale_price) }}{% endif %}</td>
+          <td>{{ it.sale_date or '' }}</td>
+          <td>{{ it.consignor or '' }}</td>
+          <td>{{ it.buyer or '' }}</td>
+          <td class="row-actions">
+  <!-- small barcode preview -->
+  {% if it.sku %}
+    <img src="/barcode/{{ it.sku }}.png"
+         alt="barcode"
+         style="height:36px;vertical-align:middle;margin-right:8px"
+         loading="lazy">
+  {% endif %}
+
+  <!-- print label in a new tab -->
+  <a class="btn-light" href="/items/{{ it.id }}/print" target="_blank">Label</a>
+
+  <!-- keep your existing buttons next to it if you want -->
+  <a class="btn-light" href="/items/{{ it.id }}/edit">Edit</a>
+  <a class="btn-light" href="/items/{{ it.id }}/sell">Sell</a>
+</td>
+
+        </tr>
+        {% else %}
+        <tr><td colspan="12" style="text-align:center;color:#666">No items yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>
+l
+<div style="display:flex;gap:8px;justify-content:center;margin:16px 0">
+  {% if page>1 %}
+    <a href="?s={{s}}&status={{status}}&ownership={{ownership}}&category={{category}}&page={{page-1}}">« Prev</a>
+  {% endif %}
+  <span>Page {{page}} / {{pages}}</span>
+  {% if pages and page<pages %}
+    <a href="?s={{s}}&status={{status}}&ownership={{ownership}}&category={{category}}&page={{page+1}}">Next »</a>
+  {% endif %}
+</div>
+

@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>FlashBidz Home</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; }
+    header { background:#111; color:#fff; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; }
+    .brand { color:#e60000; font-weight:800; letter-spacing:.5px; }
+    a { color:#e60000; text-decoration:none; }
+    main { padding:24px; }
+    .btn { padding:10px 14px; background:#e60000; color:#fff; border-radius:8px; }
+  </style>
+</head>
+<body>{% include "_navbar.html" %}
+  <header>
+    <div class="brand">⚡ FlashBidz</div>
+    <nav>
+      <a class="btn" href="/dashboard">Dashboard</a>
+      <a style="margin-left:10px" href="/logout">Logout</a>
+    </nav>
+  </header>
+  <main>
+    <h1>Welcome {{ session.username or "Guest" }}</h1>
+    <p>You’re logged in. Use the navigation to continue.</p>
+  </main>
+</body>
+</html>
+

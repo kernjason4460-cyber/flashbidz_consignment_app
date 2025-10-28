@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Upload Photos - FlashBidz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:800px; margin:0 auto; }
+    form { background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    label { display:block; margin:10px 0 6px; font-weight:600; }
+    select, input[type=file] { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; }
+    .btn { margin-top:14px; padding:10px 14px; background:#e60000; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; }
+  </style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+  <main>
+    <h1>Upload Photos</h1>
+
+    <form method="post" action="/upload" enctype="multipart/form-data">
+      <label>Attach to Item</label>
+      <select name="item_id" required>
+        <option value="">-- Select Item --</option>
+        {% for it in items %}
+          <option value="{{ it.id }}">#{{ it.id }} — {{ it.title }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Select Images (you can pick multiple)</label>
+      <input type="file" name="photos" accept="image/*" multiple required />
+
+      <button class="btn" type="submit">Upload</button>
+    </form>
+  </main>
+</body>
+</html>
+

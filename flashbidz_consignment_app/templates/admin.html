@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:system-ui;margin:0;background:#f7f7f9}
+    header,main{max-width:1000px;margin:auto;padding:20px}
+    h1{margin-top:0;color:#e60000}
+    section{background:#fff;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 4px 12px rgba(0,0,0,.05)}
+    a.btn,button.btn{display:inline-block;margin-top:10px;padding:10px 14px;background:#e60000;color:#fff;text-decoration:none;border-radius:8px;font-weight:600}
+    .btn-light{background:#555;color:#fff}
+  </style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+  <main>
+    <h1>Admin Dashboard</h1>
+
+    <section>
+      <h2>Overview</h2>
+      <p>Welcome to the FlashBidz Admin Panel. Manage system settings, consignors, items, and data tools below.</p>
+    </section>
+
+    <section>
+      <h2>Data Tools</h2>
+      <p>Import or export your auction data.</p>
+      <a class="btn-light" href="/admin/import">📥 Import Items (CSV or Google Sheets)</a>
+    </section>
+
+    <section>
+      <h2>Consignors</h2>
+      <a class="btn" href="/consignors">View / Manage Consignors</a>
+    </section>
+
+    <section>
+      <h2>Reports</h2>
+      <a class="btn" href="/reports">View Reports</a>
+    </section>
+  </main>
+</body>
+</html>
+

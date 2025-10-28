@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"><title>Consignors</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>body{font-family:system-ui;margin:0;background:#f6f7f9} main{max-width:1000px;margin:0 auto;padding:24px}</style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+  <main>
+    <h1>Consignors</h1>
+    <p><a href="/consignors/new">+ New Consignor</a></p>
+    <ul>
+      {% for c in consignors %}
+        <li>{{ c.name }}{% if c.email %} — {{ c.email }}{% endif %}</li>
+      {% else %}
+        <li style="color:#999">No consignors yet.</li>
+      {% endfor %}
+    </ul>
+  </main>
+</body>
+</html>
+

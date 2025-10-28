@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FlashBidz Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --red:#e60000; --dark:#1a1a1a; --mid:#2b2b2b; }
+    html,body { height:100%; margin:0; }
+    body {
+      background: linear-gradient(180deg, var(--dark), var(--mid));
+      font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      color:#fff; display:flex; align-items:center; justify-content:center;
+    }
+    .box {
+      width: 340px; background:#fff; color:#333; padding:36px 28px;
+      border-radius:14px; box-shadow:0 12px 40px rgba(230,0,0,.25);
+      text-align:center;
+    }
+    .logo {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      font-weight:800; color:var(--red); font-size:22px; letter-spacing:.5px;
+      margin-bottom:8px;
+    }
+    .sub { color:#777; font-size:12px; margin-bottom:18px; }
+    label { display:block; text-align:left; font-size:12px; color:#555; margin:10px 0 4px; }
+    input {
+      width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px;
+      font-size:15px; outline:none;
+    }
+    input:focus { border-color: var(--red); box-shadow:0 0 0 3px rgba(230,0,0,.12); }
+    button {
+      margin-top:14px; width:100%; padding:12px; border:none; border-radius:10px;
+      background:var(--red); color:#fff; font-weight:700; font-size:16px; cursor:pointer;
+      transition:filter .15s ease;
+    }
+    button:hover { filter:brightness(.92); }
+    .flash { color:var(--red); margin-top:10px; font-weight:700; }
+    .foot { margin-top:14px; font-size:12px; color:#999; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">⚡ FlashBidz Admin</div>
+    <div class="sub">Sign in to continue</div>
+
+      <form method="post" action="{{ url_for('login_post', next=request.args.get('next')) }}">
+      <label for="username">Username</label>
+      <input id="username" name="username" placeholder="e.g., admin" required />
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" placeholder="Your password" required />
+      <button type="submit">Login</button>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+          {% for message in messages %}{{ message }}{% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="foot">© 2025 FlashBidz Online Auctions</div>
+  </div>
+</body>
+</html>
+
