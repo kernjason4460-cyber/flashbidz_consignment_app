@@ -168,6 +168,12 @@ class User(db.Model):
     role = db.Column(db.String(20), nullable=False, default="staff")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
     def has_perm(self, perm):
         if (self.role or "").lower() == "admin":
             return True
