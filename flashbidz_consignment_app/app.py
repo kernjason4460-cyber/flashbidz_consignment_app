@@ -48,6 +48,15 @@ def require_perm(perm_name):
 
 # ---- Flask app setup ----
 app = Flask(__name__)
+# ---- session/flash secret key ----
+_secret = os.environ.get("SECRET_KEY") or os.environ.get("FLASK_SECRET_KEY")
+if not _secret:
+    # fallback so the app won't crash if env var is missing
+    _secret = os.urandom(32).hex()
+app.config["SECRET_KEY"] = _secret
+
+# (optional) tiny log to confirm source
+app.logger.info("SECRET_KEY source: %s", "ENV" if os.environ.get("SECRET_KEY") or os.environ.get("FLASK_SECRET_KEY") else "GENERATED")
 
 from flask import g
 
