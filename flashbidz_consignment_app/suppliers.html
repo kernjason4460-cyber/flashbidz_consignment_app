@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Suppliers</h1>
+
+<form method="post" action="{{ url_for('suppliers_new') }}" style="margin-bottom:1rem">
+  <input name="name" placeholder="Supplier name" required>
+  <input name="phone" placeholder="Phone">
+  <input name="email" placeholder="Email">
+  <input name="notes" placeholder="Notes" style="width:300px">
+  <button type="submit">Add</button>
+</form>
+
+<table border="1" cellpadding="6">
+  <tr>
+    <th>Name</th><th>Phone</th><th>Email</th><th>Notes</th><th>Created</th>
+  </tr>
+  {% for s in suppliers %}
+  <tr>
+    <td>{{ s.name }}</td>
+    <td>{{ s.phone }}</td>
+    <td>{{ s.email }}</td>
+    <td>{{ s.notes }}</td>
+    <td>{{ s.created_at }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
