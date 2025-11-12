@@ -289,8 +289,9 @@ class Consignor(db.Model):
     notes      = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    commission_pct = db.Column(db.Numeric(5,2), nullable=False, default=40.00)
-    advance_balance = db.Column(db.Numeric(10,2), nullable=False, default=0)
+    commission_pct = db.Column(db.Float, default=0.0)        # e.g., 35.0 means 35%
+    advance_balance = db.Column(db.Integer, default=0)       # store cents; negative or positive
+
 
 class Supplier(db.Model):
     __tablename__ = "suppliers"
