@@ -449,7 +449,7 @@ class Photo(db.Model):
 class Payout(db.Model):
     __tablename__ = "payouts"
     id           = db.Column(db.Integer, primary_key=True)
-    consignor_id = db.Column(db.Integer, db.ForeignKey("consignor.id"), nullable=False)
+    consignor_id = db.Column(db.Integer, db.ForeignKey("consignors.id"), nullable=False)
     sale_id      = db.Column(db.Integer, db.ForeignKey("sales.id"))
     amount       = db.Column(db.Numeric(10,2), nullable=False, default=0)
     method       = db.Column(db.String(30))      # cash / check / ACH / PayPal
@@ -543,6 +543,26 @@ def get_settings():
         db.session.commit()
     return s
 
+class Sale(db.Model):
+    __tablename__ = "sales"
+
+    id = db.Column(db.Integer, primary_key=True)
+    consignor_id = db.Column(
+        db.Integer,
+        db.ForeignKey("consignors.id"),
+        nullable=False
+    )
+    item_id = db.Column(db.Integer, db.ForeignKey("items.id"))  # if you have Item model
+    quantity = db.Column(db.Integer, default=1)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
+    fees = db.Column(db.Numeric(10, 2), default=0)              # eBay/processing fees
+    shipping_cost = db.Column(db.Numeric(10, 2), default=0)     # what YOU paid to ship
+    channel = db.Column(db.String(30))                          # ebay, in_person, etc
+    external_order_id = db.Column(db.String(100))               # eBay order id
+    sold_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    consignor = db.relationship("Consignor", backref="sales")
+    item = db.relationship("Item", backref="sales")  # if Item exists
 # ---------------------------
 # CONSIGNOR MODEL
 # ---------------------------
