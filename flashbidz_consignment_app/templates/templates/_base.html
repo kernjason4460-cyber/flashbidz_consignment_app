@@ -34,3 +34,9 @@
 {% block content %}{% endblock %}
 </body>
 </html>
+{% if g.user and (g.user.role|lower == 'admin' or 'suppliers:view' in g.user.perm_set()) %}
+  <a href="{{ url_for('suppliers_list') }}">Suppliers</a>
+{% endif %}
+{% if g.user and (g.user.role|lower == 'admin' or 'payouts:view' in g.user.perm_set()) %}
+  <a href="{{ url_for('payouts_list') }}">Payouts</a>
+{% endif %}
