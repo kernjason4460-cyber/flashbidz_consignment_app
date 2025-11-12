@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ title or "Admin" }}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;padding:16px;max-width:1100px;margin:auto}
+    nav a{margin-right:12px}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #ddd;padding:6px}
+    input,select,textarea{padding:6px;width:100%;max-width:600px}
+    .row{display:flex;gap:12px;align-items:center}
+    .flash{background:#fffbcc;border:1px solid #f0e68c;padding:8px;margin:8px 0}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="{{ url_for('home') }}">Home</a>
+  <a href="{{ url_for('suppliers_list') }}">Suppliers</a>
+  <a href="{{ url_for('sales_new') }}">Record Sale</a>
+  <a href="{{ url_for('payouts_list') }}">Payouts</a>
+  <a href="{{ url_for('reports_dashboard') }}">Reports</a>
+  <a href="{{ url_for('items_view') if 'items_view' in globals() else url_for('home') }}">Items</a>
+  <a href="{{ url_for('logout') }}" style="float:right">Logout</a>
+</nav>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+{% endwith %}
+<hr>
+{% block content %}{% endblock %}
+</body>
+</html>
