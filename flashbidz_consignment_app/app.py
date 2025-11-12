@@ -277,6 +277,9 @@ def require_perm(perm_name):
         s = self._perm_set()
         s.add(perm)
         self.permissions = ",".join(sorted(s))
+    @app.context_processor
+    def inject_helpers():
+        return dict()
 
     def revoke_perm(self, perm: str):
         s = self._perm_set()
