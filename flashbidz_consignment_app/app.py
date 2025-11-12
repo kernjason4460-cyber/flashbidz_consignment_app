@@ -1595,6 +1595,162 @@ def import_items_post():
         "success" if errors == 0 else "warning",
     )
     return redirect(url_for("import_items_form"))
+# ---------- Helpers ----------
+def cents(n): 
+    try: return int(round(float(n)*100))
+    except: return 0
+
+# ---------- SUPPLIERS ----------
+@app.route("/suppliers")
+@require_perm("suppliers:view")
+def suppliers_list():
+    q = request.args.get("q","").strip()
+    rows = Supplier.query
+    if q:
+        like = f"%{q}%"
+        rows = rows.filter(
+            db.or_(Supplier.name.ilike(like),
+                   Supplier.phone.ilike(like),
+                   Supplier.email.ilike(like))
+        )
+    rows = rows.order_by(Supplier.created_at.desc()).all()
+    return render_template("suppliers_list.html", rows=rows, q=q)
+
+@app.route("/suppliers/new", methods=["GET","POST"])
+@require_perm("suppliers:edit")
+def suppliers_new():
+    if request.method == "POST":
+        s = Supplier(
+            name=request.form.get("name","").strip(),
+            phone=request.form.get("phone","").strip(),
+            email=request.form.get("email","").strip(),
+            notes=request.form.get("notes","").strip(),
+        )
+        if not s.name:
+            flash("Name is required.")
+            return render_template("supplier_form.html", s=s)
+        db.session.add(s); db.session.commit()
+        flash("Supplier added.")
+        return redirect(url_for("suppliers_list"))
+    return render_template("supplier_form.html", s=None)
+
+@app.route("/suppliers/<int:sid>/edit", methods=["GET","POST"])
+@require_perm("suppliers:edit")
+def suppliers_edit(sid):
+    s = Supplier.query.get_or_404(sid)
+    if request.method == "POST":
+        s.name  = request.form.get("name","").strip()
+        s.phone = request.form.get("phone","").strip()
+        s.email = request.form.get("email","").strip()
+        s.notes = request.form.get("notes","").strip()
+        s.updated_at = datetime.utcnow()
+        if not s.name:
+            flash("Name is required.")
+            return render_template("supplier_form.html", s=s)
+        db.session.commit()
+        flash("Saved.")
+        return redirect(url_for("suppliers_list"))
+    return render_template("supplier_form.html", s=s)
+
+# ---------- SALES ----------
+@app.route("/sales/new", methods=["GET","POST"])
+@require_perm("sales:edit")
+def sales_new():
+    items = Item.query.order_by(Item.created_at.desc()).limit(300).all()
+    if request.method == "POST":
+        item_id = int(request.form.get("item_id") or 0)
+        item = Item.query.get(item_id)
+        if not item:
+            flash("Pick an item."); return render_template("sale_form.html", items=items)
+        qty = max(1, int(request.form.get("qty") or 1))
+        if item.qty_on_hand < qty:
+            flash("Not enough quantity on hand.")
+            return render_template("sale_form.html", items=items)
+        sale = Sale(
+            item_id=item.id,
+            channel=request.form.get("channel") or "auction",
+            buyer_name=request.form.get("buyer_name","").strip(),
+            qty=qty,
+            sale_price_cents=cents(request.form.get("sale_price") or 0),
+            shipping_fee_cents=cents(request.form.get("shipping_fee") or 0),
+            marketplace_fee_cents=cents(request.form.get("marketplace_fee") or 0),
+            tax_cents=cents(request.form.get("tax") or 0),
+            notes=request.form.get("notes","").strip()
+        )
+        item.qty_on_hand = item.qty_on_hand - qty
+        db.session.add(sale); db.session.commit()
+        flash("Sale recorded.")
+        return redirect(url_for("sales_new"))
+    return render_template("sale_form.html", items=items)
+
+# ---------- PAYOUTS ----------
+@app.route("/payouts")
+@require_perm("payouts:view")
+def payouts_list():
+    rows = Payout.query.order_by(Payout.created_at.desc()).limit(200).all()
+    return render_template("payouts_list.html", rows=rows)
+
+@app.route("/payouts/generate", methods=["GET","POST"])
+@require_perm("payouts:edit")
+def payouts_generate():
+    consignors = db.session.execute(db.text("SELECT DISTINCT consignor_id FROM items WHERE consignor_id IS NOT NULL")).fetchall()
+    consignor_ids = [r[0] for r in consignors]
+    if request.method == "POST":
+        consignor_id = int(request.form.get("consignor_id") or 0)
+        start = request.form.get("start") or ""
+        end   = request.form.get("end") or ""
+        q = db.session.query(
+            db.func.coalesce(db.func.sum(Sale.sale_price_cents),0),
+            db.func.coalesce(db.func.sum(Sale.shipping_fee_cents + Sale.marketplace_fee_cents),0)
+        ).join(Item, Item.id==Sale.item_id)
+        if consignor_id:
+            q = q.filter(Item.consignor_id==consignor_id)
+        if start: q = q.filter(Sale.sale_date >= start)
+        if end:   q = q.filter(Sale.sale_date <  end + " 23:59:59")
+        total_cents, fee_cents = q.first()
+        amount_due = max(0, total_cents - fee_cents)
+        p = Payout(
+            consignor_id=consignor_id or 0,
+            period_start=start or None,
+            period_end=end or None,
+            total_sales_cents=total_cents,
+            fees_cents=fee_cents,
+            amount_due_cents=amount_due,
+            status="draft"
+        )
+        db.session.add(p); db.session.commit()
+        flash("Payout draft created.")
+        return redirect(url_for("payouts_list"))
+    return render_template("payouts_generate.html", consignor_ids=consignor_ids)
+
+# ---------- REPORTS ----------
+@app.route("/reports")
+@require_perm("reports:view")
+def reports_dashboard():
+    inv = db.session.execute(db.text("""
+      SELECT COUNT(*) AS num_items,
+             COALESCE(SUM(qty_on_hand),0) AS total_units,
+             COALESCE(SUM(cost_cents),0) AS cost_cents
+      FROM items
+    """)).mappings().first()
+
+    sales = db.session.execute(db.text("""
+      SELECT COALESCE(SUM(sale_price_cents),0) AS gross_cents,
+             COALESCE(SUM(shipping_fee_cents + marketplace_fee_cents),0) AS fees_cents
+      FROM sales
+      WHERE sale_date >= DATE('now','-30 day')
+    """)).mappings().first()
+
+    top = db.session.execute(db.text("""
+      SELECT i.title, COALESCE(SUM(s.sale_price_cents),0) AS revenue_cents
+      FROM sales s JOIN items i ON i.id=s.item_id
+      GROUP BY i.id
+      ORDER BY revenue_cents DESC
+      LIMIT 10
+    """)).mappings().all()
+
+    return render_template("reports_dashboard.html",
+        inv=inv, sales=sales, top=top)
 
 if __name__ == "__main__":
     with app.app_context():
