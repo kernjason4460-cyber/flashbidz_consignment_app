@@ -8,6 +8,7 @@ from io import BytesIO
 import smtplib
 from email.message import EmailMessage
 from functools import wraps
+from decimal import Decimal
 
 from flask import Flask, request, session, redirect, url_for, render_template, flash, current_app, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -289,6 +290,8 @@ class Consignor(db.Model):
     notes      = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    commission_pct = db.Column(db.Numeric(5,2), nullable=False, default=40.00)
+    advance_balance = db.Column(db.Numeric(10,2), nullable=False, default=0)
 
 class Supplier(db.Model):
     __tablename__ = "suppliers"
@@ -442,6 +445,20 @@ class Photo(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey("items.id"), nullable=False)  # <-- plural 'items'
     filename = db.Column(db.String(255), nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Payout(db.Model):
+    __tablename__ = "payouts"
+    id           = db.Column(db.Integer, primary_key=True)
+    consignor_id = db.Column(db.Integer, db.ForeignKey("consignor.id"), nullable=False)
+    sale_id      = db.Column(db.Integer, db.ForeignKey("sales.id"))
+    amount       = db.Column(db.Numeric(10,2), nullable=False, default=0)
+    method       = db.Column(db.String(30))      # cash / check / ACH / PayPal
+    reference    = db.Column(db.String(100))     # check # / txn id
+    notes        = db.Column(db.String(200))
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+
+    consignor    = db.relationship("Consignor", backref="payouts")
+    sale         = db.relationship("Sale", backref="payouts")
 
 # ---- relationships MUST come *after* classes are defined ----
 Item.consignor_ref = relationship("Consignor", backref="items", lazy="joined")
@@ -1115,6 +1132,56 @@ def consignor_statement_csv(cid):
 
     return Response(csv_data, mimetype="text/csv",
                     headers={"Content-Disposition": f"attachment; filename=statement_{cid}.csv"})
+# ---------- Payouts ----------
+@app.get("/payouts/new/<int:consignor_id>")
+@require_perm("users:manage")
+def payouts_new(consignor_id):
+    consignor = db.session.get(Consignor, consignor_id) or abort(404)
+    return render_template("payout_new.html", consignor=consignor)
+
+@app.post("/payouts/new/<int:consignor_id>")
+@require_perm("users:manage")
+def payouts_create(consignor_id):
+    consignor = db.session.get(Consignor, consignor_id) or abort(404)
+    amount    = Decimal(request.form.get("amount", "0") or "0")
+    method    = request.form.get("method") or None
+    reference = request.form.get("reference") or None
+    notes     = request.form.get("notes") or None
+    sale_id   = request.form.get("sale_id")
+    sale_id   = int(sale_id) if sale_id else None
+
+    p = Payout(consignor_id=consignor.id, sale_id=sale_id,
+               amount=amount, method=method, reference=reference, notes=notes)
+    db.session.add(p)
+
+    if sale_id:
+        sale = db.session.get(Sale, sale_id)
+        if sale and amount >= (sale.consignor_due or 0):
+            sale.is_paid_out = True
+
+    db.session.commit()
+    flash("Payout recorded.")
+    return redirect(url_for("consignor_statement", consignor_id=consignor.id))
+
+
+# ---------- Consignor statement ----------
+@app.get("/consignors/<int:consignor_id>/statement")
+@require_perm("reports:view")
+def consignor_statement(consignor_id):
+    consignor = db.session.get(Consignor, consignor_id) or abort(404)
+
+    # total owed from sales
+    owed = db.session.query(func.sum(Sale.consignor_due))\
+        .join(Item, Item.id == Sale.item_id)\
+        .filter(Item.consignor_id == consignor.id).scalar() or 0
+
+    # payouts made
+    paid = db.session.query(func.sum(Payout.amount))\
+        .filter(Payout.consignor_id == consignor.id).scalar() or 0
+
+    balance = (owed - paid) - (consignor.advance_balance or 0)
+    return render_template("consignor_statement.html",
+        consignor=consignor, total_owed=owed, total_paid=paid, balance=balance)
 # ---------------------------
 # BASIC CONSIGNORS / ADMIN PAGES
 # ---------------------------
