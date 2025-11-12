@@ -1,0 +1,10 @@
+{% extends "_base.html" %}{% block content %}
+<h2>{{ 'Edit Supplier' if s else 'New Supplier' }}</h2>
+<form method="post">
+  <p><label>Name<br><input name="name" value="{{ s.name if s else '' }}"></label></p>
+  <p><label>Phone<br><input name="phone" value="{{ s.phone if s else '' }}"></label></p>
+  <p><label>Email<br><input name="email" value="{{ s.email if s else '' }}"></label></p>
+  <p><label>Notes<br><textarea name="notes">{{ s.notes if s else '' }}</textarea></label></p>
+  <p><button>Save</button></p>
+</form>
+{% endblock %}
