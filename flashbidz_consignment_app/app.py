@@ -198,6 +198,9 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def perm_set(self):
+    return {p.strip() for p in (self.permissions or "").split(",") if p.strip()}
 
     def has_perm(self, perm):
         if (self.role or "").lower() == "admin":
@@ -683,6 +686,62 @@ def send_email(to_addr: str, subject: str, body: str):
 
 
 from sqlalchemy import func
+
+# -------------------------
+# Suppliers (simple starter)
+# -------------------------
+@app.route("/suppliers")
+@require_perm("suppliers:view")
+def suppliers_list():
+    Supplier = db.Model._decl_class_registry.get("Supplier")  # handles import order
+    if Supplier is None:
+        flash("Suppliers table not found.")
+        return redirect(url_for("home"))
+
+    q = Supplier.query.order_by(Supplier.created_at.desc())
+    items = q.limit(100).all()
+    return render_template("suppliers.html", suppliers=items)
+
+
+@app.route("/suppliers/new", methods=["POST"])
+@require_perm("suppliers:edit")
+def suppliers_new():
+    Supplier = db.Model._decl_class_registry.get("Supplier")
+    if Supplier is None:
+        flash("Suppliers table not found.")
+        return redirect(url_for("suppliers_list"))
+
+    name = (request.form.get("name") or "").strip()
+    phone = (request.form.get("phone") or "").strip()
+    email = (request.form.get("email") or "").strip()
+    notes = (request.form.get("notes") or "").strip()
+
+    if not name:
+        flash("Name is required.")
+        return redirect(url_for("suppliers_list"))
+
+    s = Supplier(name=name, phone=phone, email=email, notes=notes)
+    db.session.add(s)
+    db.session.commit()
+    flash("Supplier added.")
+    return redirect(url_for("suppliers_list"))
+
+
+# --------------
+# Payouts (view)
+# --------------
+@app.route("/payouts")
+@require_perm("payouts:view")
+def payouts_list():
+    # Very simple starter page; shows latest items that have consignor_payout set
+    Item = db.Model._decl_class_registry.get("Item")
+    if Item is None:
+        flash("Items table not found.")
+        return redirect(url_for("home"))
+
+    q = Item.query.filter(Item.consignor_payout.isnot(None)).order_by(Item.updated_at.desc())
+    items = q.limit(200).all()
+    return render_template("payouts.html", items=items)
 
 @require_perm("consignors:manage")
 @require_perm("data:import")
