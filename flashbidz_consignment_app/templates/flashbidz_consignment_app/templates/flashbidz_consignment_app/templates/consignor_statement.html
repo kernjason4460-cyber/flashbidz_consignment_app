@@ -1,0 +1,7 @@
+<h1>Statement — {{ consignor.name }}</h1>
+<p>Total owed from sales: ${{ '%.2f'|format(total_owed) }}</p>
+<p>Total paid to consignor: ${{ '%.2f'|format(total_paid) }}</p>
+<p>Advance balance: ${{ '%.2f'|format(consignor.advance_balance or 0) }}</p>
+<hr>
+<p><b>Current balance due: ${{ '%.2f'|format(balance) }}</b></p>
+<p><a href="{{ url_for('payouts_new', consignor_id=consignor.id) }}">Record a payout</a></p>
