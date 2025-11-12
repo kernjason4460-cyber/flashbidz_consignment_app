@@ -282,7 +282,6 @@ def require_perm(perm_name):
         self.permissions = ",".join(sorted(s))
 class Consignor(db.Model):
     __tablename__ = "consignors"
-
     id         = db.Column(db.Integer, primary_key=True)
     name       = db.Column(db.String(140), nullable=False, index=True)
     phone      = db.Column(db.String(50))
