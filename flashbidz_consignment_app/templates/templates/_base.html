@@ -21,11 +21,14 @@
   <a href="{{ url_for('sales_new') }}">Record Sale</a>
   <a href="{{ url_for('payouts_list') }}">Payouts</a>
   <a href="{{ url_for('reports_dashboard') }}">Reports</a>
-  <a href="{{ url_for('items_view') if 'items_view' in globals() else url_for('home') }}">Items</a>
   <a href="{{ url_for('logout') }}" style="float:right">Logout</a>
 </nav>
 {% with messages = get_flashed_messages() %}
-  {% if messages %}{% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}{% endif %}
+  {% if messages %}
+    {% for m in messages %}
+      <div class="flash">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
 {% endwith %}
 <hr>
 {% block content %}{% endblock %}
