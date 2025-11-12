@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Payouts</h1>
+
+<p>This shows items that have a consignor payout recorded.</p>
+
+<table border="1" cellpadding="6">
+  <tr>
+    <th>SKU</th>
+    <th>Title</th>
+    <th>Consignor</th>
+    <th>Sale Price</th>
+    <th>Payout</th>
+    <th>Updated</th>
+  </tr>
+  {% for it in items %}
+  <tr>
+    <td>{{ it.sku }}</td>
+    <td>{{ it.title }}</td>
+    <td>{{ it.consignor_name }}</td>
+    <td>${{ (it.sale_price_cents or 0) / 100.0 }}</td>
+    <td>${{ (it.consignor_payout or 0) / 100.0 }}</td>
+    <td>{{ it.updated_at }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
