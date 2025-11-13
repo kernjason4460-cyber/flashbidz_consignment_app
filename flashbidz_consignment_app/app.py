@@ -1228,16 +1228,177 @@ def consignor_statement(consignor_id):
     balance = (owed - paid) - (consignor.advance_balance or 0)
     return render_template("consignor_statement.html",
         consignor=consignor, total_owed=owed, total_paid=paid, balance=balance)
-# ---------------------------
-# BASIC CONSIGNORS / ADMIN PAGES
-# ---------------------------
+# =========================
+# CONSIGNOR MANAGEMENT
+# =========================
 
-@app.get("/consignors")
+@app.route("/consignors")
+@require_perm("consignors:view")
 def consignors_list():
-    # Show list even if empty
-    consignors = Consignor.query.order_by(Consignor.name.asc()).all() if 'Consignor' in globals() else []
-    return render_template("consignors.html", consignors=consignors)
+    Consignor = db.Model._decl_class_registry.get("Consignor")
+    Item = db.Model._decl_class_registry.get("Item")
+    if not Consignor:
+        flash("Consignors table not found.")
+        return redirect(url_for("home"))
 
+    q = (request.args.get("q") or "").strip()
+
+    # Base query
+    base_q = Consignor.query
+
+    if q:
+        like = f"%{q}%"
+        base_q = base_q.filter(
+            db.or_(
+                Consignor.name.ilike(like),
+                Consignor.email.ilike(like),
+                Consignor.phone.ilike(like),
+            )
+        )
+
+    consignors = base_q.order_by(Consignor.created_at.desc()).all()
+
+    # Stats (item counts per consignor)
+    stats_by_id = {}
+    if Item and consignors:
+        ids = [c.id for c in consignors]
+        rows = (
+            db.session.query(
+                Item.consignor_id.label("cid"),
+                db.func.count(Item.id).label("total_items"),
+                db.func.sum(
+                    db.case(
+                        (Item.status == "sold", 1),
+                        else_=0,
+                    )
+                ).label("sold_items"),
+            )
+            .filter(Item.consignor_id.in_(ids))
+            .group_by(Item.consignor_id)
+            .all()
+        )
+        for r in rows:
+            stats_by_id[r.cid] = {
+                "total": r.total_items or 0,
+                "sold": r.sold_items or 0,
+            }
+
+    return render_template(
+        "consignors.html",
+        consignors=consignors,
+        stats_by_id=stats_by_id,
+        q=q,
+    )
+
+
+@app.route("/consignors/new", methods=["GET", "POST"])
+@require_perm("consignors:edit")
+def consignors_new():
+    Consignor = db.Model._decl_class_registry.get("Consignor")
+    if not Consignor:
+        flash("Consignors table not found.")
+        return redirect(url_for("consignors_list"))
+
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        email = (request.form.get("email") or "").strip()
+        phone = (request.form.get("phone") or "").strip()
+        notes = (request.form.get("notes") or "").strip()
+        commission_pct = (request.form.get("commission_pct") or "").strip()
+        advance_balance = (request.form.get("advance_balance") or "").strip()
+
+        if not name:
+            flash("Name is required.")
+            return redirect(url_for("consignors_new"))
+
+        try:
+            commission_pct_val = float(commission_pct) if commission_pct else 0.0
+        except ValueError:
+            commission_pct_val = 0.0
+
+        try:
+            advance_balance_val = float(advance_balance) if advance_balance else 0.0
+        except ValueError:
+            advance_balance_val = 0.0
+
+        c = Consignor(
+            name=name,
+            email=email,
+            phone=phone,
+            notes=notes,
+            commission_pct=commission_pct_val,
+            advance_balance=advance_balance_val,
+        )
+        db.session.add(c)
+        db.session.commit()
+        flash("Consignor added.")
+        return redirect(url_for("consignors_list"))
+
+    return render_template("consignor_form.html", consignor=None)
+
+
+@app.route("/consignors/<int:cid>/edit", methods=["GET", "POST"])
+@require_perm("consignors:edit")
+def consignors_edit(cid):
+    Consignor = db.Model._decl_class_registry.get("Consignor")
+    if not Consignor:
+        flash("Consignors table not found.")
+        return redirect(url_for("consignors_list"))
+
+    c = Consignor.query.get_or_404(cid)
+
+    if request.method == "POST":
+        c.name = (request.form.get("name") or "").strip()
+        c.email = (request.form.get("email") or "").strip()
+        c.phone = (request.form.get("phone") or "").strip()
+        c.notes = (request.form.get("notes") or "").strip()
+
+        commission_pct = (request.form.get("commission_pct") or "").strip()
+        advance_balance = (request.form.get("advance_balance") or "").strip()
+
+        try:
+            c.commission_pct = float(commission_pct) if commission_pct else 0.0
+        except ValueError:
+            c.commission_pct = 0.0
+
+        try:
+            c.advance_balance = float(advance_balance) if advance_balance else 0.0
+        except ValueError:
+            c.advance_balance = 0.0
+
+        db.session.commit()
+        flash("Consignor updated.")
+        return redirect(url_for("consignors_list"))
+
+    return render_template("consignor_form.html", consignor=c)
+
+
+@app.route("/consignors/<int:cid>")
+@require_perm("consignors:view")
+def consignors_detail(cid):
+    Consignor = db.Model._decl_class_registry.get("Consignor")
+    Item = db.Model._decl_class_registry.get("Item")
+    if not Consignor:
+        flash("Consignors table not found.")
+        return redirect(url_for("home"))
+
+    consignor = Consignor.query.get_or_404(cid)
+
+    items = []
+    if Item:
+        items = (
+            Item.query.filter_by(consignor_id=cid)
+            .order_by(Item.created_at.desc())
+            .limit(200)
+            .all()
+        )
+
+    return render_template(
+        "consignor_detail.html",
+        consignor=consignor,
+        items=items,
+    )
+    
 # ---------------------------
 # CONSIGNORS: NEW (GET + POST)
 # ---------------------------
