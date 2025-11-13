@@ -725,31 +725,6 @@ def suppliers_list():
     items = q.limit(100).all()
     return render_template("suppliers.html", suppliers=items)
 
-
-@app.route("/suppliers/new", methods=["POST"])
-@require_perm("suppliers:edit")
-def suppliers_new():
-    Supplier = db.Model._decl_class_registry.get("Supplier")
-    if Supplier is None:
-        flash("Suppliers table not found.")
-        return redirect(url_for("suppliers_list"))
-
-    name = (request.form.get("name") or "").strip()
-    phone = (request.form.get("phone") or "").strip()
-    email = (request.form.get("email") or "").strip()
-    notes = (request.form.get("notes") or "").strip()
-
-    if not name:
-        flash("Name is required.")
-        return redirect(url_for("suppliers_list"))
-
-    s = Supplier(name=name, phone=phone, email=email, notes=notes)
-    db.session.add(s)
-    db.session.commit()
-    flash("Supplier added.")
-    return redirect(url_for("suppliers_list"))
-
-
 # --------------
 # Payouts (view)
 # --------------
