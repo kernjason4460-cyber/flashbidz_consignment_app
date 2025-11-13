@@ -1287,44 +1287,53 @@ def consignors_list():
 
 @app.route("/consignors/new", methods=["GET", "POST"])
 @require_perm("consignors:edit")
-def consignors_new():
+def consignor_create():
+    Consignor = db.Model._decl_class_registry.get("Consignor")
+    if not Consignor:
+        flash("Consignors table not found.")
+        return redirect(url_for("home"))
+
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
-        email = (request.form.get("email") or "").strip()
-        phone = (request.form.get("phone") or "").strip()
-        notes = (request.form.get("notes") or "").strip()
-        commission_pct = (request.form.get("commission_pct") or "").strip()
-        advance_balance = (request.form.get("advance_balance") or "").strip()
+        email = (request.form.get("email") or "").strip() or None
+        phone = (request.form.get("phone") or "").strip() or None
+        notes = (request.form.get("notes") or "").strip() or None
+
+        commission_pct_raw = (request.form.get("commission_pct") or "").strip()
+        advance_balance_raw = (request.form.get("advance_balance") or "").strip()
+        license_image = (request.form.get("license_image") or "").strip() or None
+
+        try:
+            commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
+        except ValueError:
+            commission_pct = 0.0
+
+        try:
+            advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
+        except ValueError:
+            advance_balance = 0.0
 
         if not name:
-            flash("Name is required.")
-            return redirect(url_for("consignors_new"))
-
-        try:
-            commission_pct_val = float(commission_pct) if commission_pct else 0.0
-        except ValueError:
-            commission_pct_val = 0.0
-
-        try:
-            advance_balance_val = float(advance_balance) if advance_balance else 0.0
-        except ValueError:
-            advance_balance_val = 0.0
+            flash("Name is required")
+            return render_template("consignor_form.html", consignor=None)
 
         c = Consignor(
             name=name,
             email=email,
             phone=phone,
             notes=notes,
-            commission_pct=commission_pct_val,
-            advance_balance=advance_balance_val,
+            commission_pct=commission_pct,
+            advance_balance=advance_balance,
+            license_image=license_image,
         )
         db.session.add(c)
         db.session.commit()
-        flash("Consignor added.")
+        flash("Consignor created.")
         return redirect(url_for("consignors_list"))
 
-    # GET → show blank form
+    # GET – show blank form
     return render_template("consignor_form.html", consignor=None)
+
 
 def get_settings():
     s = Settings.query.get(1)
