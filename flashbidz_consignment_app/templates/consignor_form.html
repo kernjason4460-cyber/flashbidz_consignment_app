@@ -22,9 +22,10 @@
     <h1>{% if consignor %}Edit Consignor{% else %}New Consignor{% endif %}</h1>
 
     <!-- action="" = post back to same URL (/consignors/new OR /consignors/<id>/edit) -->
-    <form method="post" action="">
-      <label>Name *</label>
-      <input name="name" required value="{{ consignor.name if consignor else '' }}" />
+    <form method="post"
+      action="{% if consignor %}{{ url_for('consignors_edit', cid=consignor.id) }}{% else %}{{ url_for('consignor_create') }}{% endif %}"
+      enctype="multipart/form-data">
+
 
       <label>Email</label>
       <input name="email" type="email" value="{{ consignor.email if consignor else '' }}" />
@@ -41,6 +42,22 @@
       <input name="advance_balance" type="number" step="0.01"
              placeholder="0.00"
              value="{{ consignor.advance_balance if consignor else '' }}" />
+      <div class="form-group">
+        <label>Driver's License (photo)</label>
+        <input type="file"
+               name="license_image"
+               accept="image/*"
+               class="form-control" />
+
+        {% if consignor and consignor.license_image %}
+          <small class="form-text text-muted">
+            Current file:
+            <a href="{{ url_for('static', filename=consignor.license_image) }}" target="_blank">
+              View / download
+            </a>
+          </small>
+        {% endif %}
+      </div>
 
       <label>Notes</label>
       <textarea name="notes" rows="3">{{ consignor.notes if consignor else '' }}</textarea>
