@@ -1,23 +1,62 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8"><title>Consignors</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <style>body{font-family:system-ui;margin:0;background:#f6f7f9} main{max-width:1000px;margin:0 auto;padding:24px}</style>
+  <meta charset="utf-8">
+  <title>Consignors</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { max-width:1000px; margin:0 auto; padding:24px; }
+    h1 { margin-bottom:16px; }
+    .actions-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .btn { display:inline-block; padding:8px 14px; border-radius:8px; background:#e00000; color:#fff; text-decoration:none; font-weight:600; }
+    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
+    th { background:#fafafa; font-weight:700; }
+    tr:last-child td { border-bottom:none; }
+    .empty { color:#999; padding:16px 0; }
+    a.edit-link { color:#0077cc; text-decoration:none; }
+    a.edit-link:hover { text-decoration:underline; }
+  </style>
 </head>
 <body>
   {% include "_navbar.html" %}
   <main>
-    <h1>Consignors</h1>
-    <p><a href="/consignors/new">+ New Consignor</a></p>
-    <ul>
-      {% for c in consignors %}
-        <li>{{ c.name }}{% if c.email %} — {{ c.email }}{% endif %}</li>
-      {% else %}
-        <li style="color:#999">No consignors yet.</li>
-      {% endfor %}
-    </ul>
+    <div class="actions-bar">
+      <h1>Consignors</h1>
+      <a class="btn" href="/consignors/new">+ New Consignor</a>
+    </div>
+
+    {% if consignors %}
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Commission %</th>
+            <th>Advance Balance ($)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in consignors %}
+          <tr>
+            <td>{{ c.name }}</td>
+            <td>{{ c.email }}</td>
+            <td>{{ c.phone }}</td>
+            <td>{{ "%.2f"|format(c.commission_pct or 0) }}</td>
+            <td>{{ "%.2f"|format(c.advance_balance or 0) }}</td>
+            <td>
+              <a class="edit-link" href="{{ url_for('consignors_edit', cid=c.id) }}">Edit</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty">No consignors yet.</p>
+    {% endif %}
   </main>
 </body>
 </html>
-
