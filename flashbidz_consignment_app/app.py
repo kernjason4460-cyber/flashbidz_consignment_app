@@ -313,6 +313,7 @@ class Consignor(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     commission_pct = db.Column(db.Float, default=0.0)        # e.g., 35.0 means 35%
     advance_balance = db.Column(db.Integer, default=0)       # store cents; negative or positive
+    license_image = db.Column(db.String(255))  # path to driver's license image
 
 
 class Supplier(db.Model):
