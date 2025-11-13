@@ -710,21 +710,6 @@ def send_email(to_addr: str, subject: str, body: str):
 
 from sqlalchemy import func
 
-# -------------------------
-# Suppliers (simple starter)
-# -------------------------
-@app.route("/suppliers")
-@require_perm("suppliers:view")
-def suppliers_list():
-    Supplier = db.Model._decl_class_registry.get("Supplier")  # handles import order
-    if Supplier is None:
-        flash("Suppliers table not found.")
-        return redirect(url_for("home"))
-
-    q = Supplier.query.order_by(Supplier.created_at.desc())
-    items = q.limit(100).all()
-    return render_template("suppliers.html", suppliers=items)
-
 # --------------
 # Payouts (view)
 # --------------
