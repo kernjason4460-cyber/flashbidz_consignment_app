@@ -188,9 +188,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username  = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="staff")
+    permissions = db.Column(db.String(255), nullable=False, default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, password):
@@ -198,21 +199,40 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    
+
     def perm_set(self):
-    return {p.strip() for p in (self.permissions or "").split(",") if p.strip()}
+        return {
+            p.strip()
+            for p in (self.permissions or "").split(",")
+            if p.strip()
+        }
 
     def has_perm(self, perm):
-        if (self.role or "").lower() == "admin":
+        r = (self.role or "").lower()
+
+        # Admin can do anything
+        if r == "admin":
             return True
-        staff_perms  = {"items:view","items:add","items:edit","reports:view","data:import","data:export"}
+
+        # If explicit permissions set, use them
+        perms = self.perm_set()
+        if perms:
+            return perm in perms
+
+        # Fallback to old role-based defaults
+        staff_perms = {
+            "items:view", "items:add", "items:edit",
+            "reports:view", "data:import", "data:export"
+        }
         viewer_perms = {"items:view"}
-        role = (self.role or "").lower()
-        if role == "staff":
+
+        if r == "staff":
             return perm in staff_perms
-        if role == "viewer":
+        if r == "viewer":
             return perm in viewer_perms
+
         return False
+
 
 # ↓ Paste require_perm HERE (after User is defined)
 def require_perm(perm_name):
