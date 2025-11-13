@@ -23,6 +23,9 @@
   <a href="{{ url_for('reports_dashboard') }}">Reports</a>
   <a href="{{ url_for('logout') }}" style="float:right">Logout</a>
 </nav>
+{% if g.user and (g.user.role|lower == 'admin' or 'consignors:view' in g.user.perm_set()) %}
+  <a href="{{ url_for('consignors_list') }}">Consignors</a>
+{% endif %}
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     {% for m in messages %}
