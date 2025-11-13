@@ -710,22 +710,6 @@ def send_email(to_addr: str, subject: str, body: str):
 
 from sqlalchemy import func
 
-# --------------
-# Payouts (view)
-# --------------
-@app.route("/payouts")
-@require_perm("payouts:view")
-def payouts_list():
-    # Very simple starter page; shows latest items that have consignor_payout set
-    Item = db.Model._decl_class_registry.get("Item")
-    if Item is None:
-        flash("Items table not found.")
-        return redirect(url_for("home"))
-
-    q = Item.query.filter(Item.consignor_payout.isnot(None)).order_by(Item.updated_at.desc())
-    items = q.limit(200).all()
-    return render_template("payouts.html", items=items)
-
 @require_perm("consignors:manage")
 @require_perm("data:import")
 @require_perm("reports:view")
