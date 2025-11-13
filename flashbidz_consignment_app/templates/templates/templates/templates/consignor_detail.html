@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Consignor: {{ consignor.name }}</h1>
+
+<p>
+  {% if consignor.email %}Email: {{ consignor.email }}<br>{% endif %}
+  {% if consignor.phone %}Phone: {{ consignor.phone }}<br>{% endif %}
+  Commission: {{ "%.1f"|format(consignor.commission_pct or 0) }}%<br>
+  Advance balance: ${{ "%.2f"|format(consignor.advance_balance or 0) }}<br>
+</p>
+
+<p>
+  <a href="{{ url_for('consignors_edit', cid=consignor.id) }}">Edit consignor</a> |
+  <a href="{{ url_for('consignors_list') }}">Back to list</a>
+</p>
+
+<h2>Items for this consignor</h2>
+
+{% if not items %}
+  <p>No items found for this consignor yet.</p>
+{% else %}
+<table border="1" cellpadding="4" cellspacing="0">
+  <tr>
+    <th>ID</th>
+    <th>SKU</th>
+    <th>Title</th>
+    <th>Status</th>
+    <th>Sale price</th>
+    <th>Sale date</th>
+  </tr>
+  {% for it in items %}
+    <tr>
+      <td>{{ it.id }}</td>
+      <td>{{ it.sku }}</td>
+      <td>{{ it.title }}</td>
+      <td>{{ it.status }}</td>
+      <td>
+        {% if it.sale_price_cents %}
+          ${{ "%.2f"|format((it.sale_price_cents or 0)/100.0) }}
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>{{ it.sale_date }}</td>
+    </tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endblock %}
