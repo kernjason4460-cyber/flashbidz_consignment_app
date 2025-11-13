@@ -176,10 +176,6 @@ def _require_login_globally():
             return redirect(url_for("home"))
 
 # ---------------------------
-# DATABASE MODELS
-# ---------------------------
-
-# ---------------------------
 # DATABASE MODELS (canonical)
 # ---------------------------
 from datetime import datetime
@@ -1336,6 +1332,38 @@ def get_settings():
         db.session.add(s)
         db.session.commit()
     return s
+
+@app.route("/consignors/<int:cid>/edit", methods=["GET", "POST"])
+@require_perm("consignors:edit")
+def consignors_edit(cid):
+    # Get the existing consignor or 404
+    c = Consignor.query.get_or_404(cid)
+
+    if request.method == "POST":
+        c.name = (request.form.get("name") or "").strip()
+        c.email = (request.form.get("email") or "").strip()
+        c.phone = (request.form.get("phone") or "").strip()
+        c.notes = (request.form.get("notes") or "").strip()
+
+        commission_pct = (request.form.get("commission_pct") or "").strip()
+        advance_balance = (request.form.get("advance_balance") or "").strip()
+
+        try:
+            c.commission_pct = float(commission_pct) if commission_pct else 0.0
+        except ValueError:
+            c.commission_pct = 0.0
+
+        try:
+            c.advance_balance = float(advance_balance) if advance_balance else 0.0
+        except ValueError:
+            c.advance_balance = 0.0
+
+        db.session.commit()
+        flash("Consignor updated.")
+        return redirect(url_for("consignors_list"))
+
+    # GET → show form with existing values
+    return render_template("consignor_form.html", consignor=c)
 
 @app.get("/admin")
 def admin_view():
