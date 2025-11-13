@@ -1288,34 +1288,47 @@ def consignors_list():
 # CONSIGNORS: NEW (GET + POST)
 # ---------------------------
 
-@app.get("/consignors/new")
-def consignor_new():
-    # show the new consignor form
+@app.route("/consignors/new", methods=["GET", "POST"])
+@require_perm("consignors:edit")
+def consignors_new():
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        email = (request.form.get("email") or "").strip()
+        phone = (request.form.get("phone") or "").strip()
+        notes = (request.form.get("notes") or "").strip()
+        commission_pct = (request.form.get("commission_pct") or "").strip()
+        advance_balance = (request.form.get("advance_balance") or "").strip()
+
+        if not name:
+            flash("Name is required.")
+            return redirect(url_for("consignors_new"))
+
+        try:
+            commission_pct_val = float(commission_pct) if commission_pct else 0.0
+        except ValueError:
+            commission_pct_val = 0.0
+
+        try:
+            advance_balance_val = float(advance_balance) if advance_balance else 0.0
+        except ValueError:
+            advance_balance_val = 0.0
+
+        c = Consignor(
+            name=name,
+            email=email,
+            phone=phone,
+            notes=notes,
+            commission_pct=commission_pct_val,
+            advance_balance=advance_balance_val,
+        )
+        db.session.add(c)
+        db.session.commit()
+        flash("Consignor added.")
+        return redirect(url_for("consignors_list"))
+
+    # GET → show blank form
     return render_template("consignor_form.html", consignor=None)
 
-@app.post("/consignors/new")
-def consignor_create():
-    name  = (request.form.get("name") or "").strip()
-    email = (request.form.get("email") or "").strip() or None
-    phone = (request.form.get("phone") or "").strip() or None
-    notes = (request.form.get("notes") or "").strip() or None
-    dr    = (request.form.get("default_rate") or "").strip()
-    try:
-        default_rate = float(dr) if dr else None
-        if default_rate is not None and not (0 <= default_rate <= 1):
-            default_rate = None
-    except Exception:
-        default_rate = None
-
-    if not name:
-        flash("Name is required")
-        return redirect(url_for("consignor_new"))
-
-    c = Consignor(name=name, email=email, phone=phone, notes=notes, default_rate=default_rate)
-    db.session.add(c)
-    db.session.commit()
-    flash("Consignor created")
-    return redirect(url_for("consignors_list"))
 def get_settings():
     s = Settings.query.get(1)
     if not s:
