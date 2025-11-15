@@ -10,6 +10,7 @@ from email.message import EmailMessage
 from functools import wraps
 from decimal import Decimal
 from sqlalchemy import text
+from flashbidz_consignment_app.models import Consignor
 
 from flask import Flask, request, session, redirect, url_for, render_template, flash, current_app, abort
 from flask_sqlalchemy import SQLAlchemy
