@@ -9,6 +9,7 @@ import smtplib
 from email.message import EmailMessage
 from functools import wraps
 from decimal import Decimal
+from sqlalchemy import text
 
 from flask import Flask, request, session, redirect, url_for, render_template, flash, current_app, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -1228,9 +1229,39 @@ def consignor_statement(consignor_id):
 # =========================
 # CONSIGNOR MANAGEMENT
 # =========================
+def ensure_consignor_columns():
+    """Make sure consignors table has commission_pct, advance_balance, license_image."""
+    try:
+        # Use a transaction that auto-commits
+        with db.engine.begin() as conn:
+            cols = conn.execute(text("PRAGMA table_info(consignors)")).fetchall()
+            names = {c[1] for c in cols}
+
+            # Add commission_pct if missing
+            if "commission_pct" not in names:
+                conn.execute(
+                    text("ALTER TABLE consignors ADD COLUMN commission_pct REAL DEFAULT 0")
+                )
+
+            # Add advance_balance if missing
+            if "advance_balance" not in names:
+                conn.execute(
+                    text("ALTER TABLE consignors ADD COLUMN advance_balance REAL DEFAULT 0")
+                )
+
+            # Add license_image if missing
+            if "license_image" not in names:
+                conn.execute(
+                    text("ALTER TABLE consignors ADD COLUMN license_image TEXT")
+                )
+    except Exception as e:
+        # If something weird happens, log it but don't kill the request
+        app.logger.error(f"ensure_consignor_columns error: {e}")
 @app.route("/consignors")
 @require_perm("consignors:view")
 def consignors_list():
+    ensure_consignor_columns()
+    
     q = (request.args.get("q") or "").strip()
 
     # Base query
@@ -1288,6 +1319,7 @@ def consignors_list():
 @app.route("/consignors/new", methods=["GET", "POST"])
 @require_perm("consignors:create")
 def consignor_create():
+    ensure_consignor_columns()
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip() or None
