@@ -20,6 +20,8 @@ from PIL import Image
 from flask import send_from_directory
 import csv
 import urllib.request
+import time
+import re
 
 def require_perm(perm_name):
     def decorator(fn):
@@ -57,6 +59,17 @@ if not _secret:
     _secret = os.urandom(32).hex()
 app.config["SECRET_KEY"] = _secret
 
+# ===== Driver's license upload config =====
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+LICENSE_UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "licenses")
+os.makedirs(LICENSE_UPLOAD_FOLDER, exist_ok=True)
+
+app.config["LICENSE_UPLOAD_FOLDER"] = LICENSE_UPLOAD_FOLDER
+ALLOWED_LICENSE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "pdf"}
+
+
+def allowed_license_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_LICENSE_EXTENSIONS
 
 # (optional) tiny log to confirm source
 app.logger.info("SECRET_KEY source: %s", "ENV" if os.environ.get("SECRET_KEY") or os.environ.get("FLASK_SECRET_KEY") else "GENERATED")
@@ -1317,10 +1330,15 @@ def consignors_list():
 # ---------------------------
 
 @app.route("/consignors/new", methods=["GET", "POST"])
-@require_perm("consignors:create")
+@require_perm("consignors:edit")
 def consignor_create():
-    ensure_consignor_columns()
+    Consignor = db.Model._decl_class_registry.get("Consignor")
+    if not Consignor:
+        flash("Consignors table not found.")
+        return redirect(url_for("home"))
+
     if request.method == "POST":
+        # Text fields
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip() or None
         phone = (request.form.get("phone") or "").strip() or None
@@ -1328,17 +1346,36 @@ def consignor_create():
 
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
-        license_image = (request.form.get("license_image") or "").strip() or None
 
+        # Parse commission %
         try:
             commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
         except ValueError:
             commission_pct = 0.0
 
+        # Parse advance balance
         try:
             advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
         except ValueError:
             advance_balance = 0.0
+
+        # ----- Driver's license upload -----
+        license_file = request.files.get("license_image")
+        license_image = None
+
+        if license_file and license_file.filename:
+            if not allowed_license_file(license_file.filename):
+                flash("License image must be a JPG, PNG, GIF or PDF.")
+                return render_template("consignor_form.html", consignor=None)
+
+            ext = license_file.filename.rsplit(".", 1)[1].lower()
+            safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", name or "consignor")
+            fname = f"{safe_name}_{int(time.time())}.{ext}"
+            fname = secure_filename(fname)
+
+            save_path = os.path.join(app.config["LICENSE_UPLOAD_FOLDER"], fname)
+            license_file.save(save_path)
+            license_image = fname
 
         if not name:
             flash("Name is required")
@@ -1362,6 +1399,7 @@ def consignor_create():
     return render_template("consignor_form.html", consignor=None)
 
 
+
 def get_settings():
     s = Settings.query.get(1)
     if not s:
@@ -1373,31 +1411,55 @@ def get_settings():
 @app.route("/consignors/<int:cid>/edit", methods=["GET", "POST"])
 @require_perm("consignors:edit")
 def consignors_edit(cid):
-    # Get the existing consignor or 404
+    Consignor = db.Model._decl_class_registry.get("Consignor")
+    if not Consignor:
+        flash("Consignors table not found.")
+        return redirect(url_for("consignors_list"))
+
     c = Consignor.query.get_or_404(cid)
 
     if request.method == "POST":
         c.name = (request.form.get("name") or "").strip()
-        c.email = (request.form.get("email") or "").strip()
-        c.phone = (request.form.get("phone") or "").strip()
-        c.notes = (request.form.get("notes") or "").strip()
+        c.email = (request.form.get("email") or "").strip() or None
+        c.phone = (request.form.get("phone") or "").strip() or None
+        c.notes = (request.form.get("notes") or "").strip() or None
 
-        commission_pct = (request.form.get("commission_pct") or "").strip()
-        advance_balance = (request.form.get("advance_balance") or "").strip()
+        commission_pct_raw = (request.form.get("commission_pct") or "").strip()
+        advance_balance_raw = (request.form.get("advance_balance") or "").strip()
 
         try:
-            c.commission_pct = float(commission_pct) if commission_pct else 0.0
+            c.commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
         except ValueError:
             c.commission_pct = 0.0
 
         try:
-            c.advance_balance = float(advance_balance) if advance_balance else 0.0
+            c.advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
         except ValueError:
             c.advance_balance = 0.0
+
+        # ----- Driver's license upload (optional update) -----
+        license_file = request.files.get("license_image")
+        if license_file and license_file.filename:
+            if not allowed_license_file(license_file.filename):
+                flash("License image must be a JPG, PNG, GIF or PDF.")
+                return render_template("consignor_form.html", consignor=c)
+
+            ext = license_file.filename.rsplit(".", 1)[1].lower()
+            safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", c.name or "consignor")
+            fname = f"{safe_name}_{int(time.time())}.{ext}"
+            fname = secure_filename(fname)
+
+            save_path = os.path.join(app.config["LICENSE_UPLOAD_FOLDER"], fname)
+            license_file.save(save_path)
+            c.license_image = fname  # overwrite old value
 
         db.session.commit()
         flash("Consignor updated.")
         return redirect(url_for("consignors_list"))
+
+    # GET – show form with existing data
+    return render_template("consignor_form.html", consignor=c)
+
 
     # GET → show form with existing values
     return render_template("consignor_form.html", consignor=c)
