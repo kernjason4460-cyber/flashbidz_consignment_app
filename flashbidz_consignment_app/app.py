@@ -1286,12 +1286,8 @@ def consignors_list():
 # ---------------------------
 
 @app.route("/consignors/new", methods=["GET", "POST"])
-@require_perm("consignors:edit")
+@require_perm("consignors:create")
 def consignor_create():
-    if not Consignor:
-        flash("Consignors table not found.")
-        return redirect(url_for("home"))
-
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip() or None
