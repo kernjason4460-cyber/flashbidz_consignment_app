@@ -22,7 +22,8 @@
   <main>
     <h1>{% if consignor %}Edit Consignor{% else %}New Consignor{% endif %}</h1>
 
-    <form method="post" action="{{ url_for('consignor_create') }}">
+    <form method="post" enctype="multipart/form-data">
+
       <label>Name *</label>
       <input
         type="text"
@@ -75,7 +76,19 @@
       <label>Notes</label>
       <textarea name="notes">{{ consignor.notes if consignor else '' }}</textarea>
 
-      <div class="actions">
+      <label>Driver's License Image</label>
+
+{% if consignor and consignor.license_image %}
+  <div style="margin-bottom: 8px;">
+    <a href="{{ url_for('static', filename='licenses/' ~ consignor.license_image) }}"
+       target="_blank">
+      View current license
+    </a>
+  </div>
+{% endif %}
+
+<input type="file" name="license_image" accept="image/*,.pdf" />
+<div class="actions">
         <button type="submit" class="btn btn-primary">Save</button>
         <a href="{{ url_for('consignors_list') }}" class="btn btn-light">Cancel</a>
       </div>
