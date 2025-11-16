@@ -53,6 +53,7 @@
           <th>Name</th>
           <th>Email</th>
           <th>Phone</th>
+          <th>License</th>
           <th>Commission %</th>
           <th>Advance Balance ($)</th>
           <th>DL Image</th>
@@ -70,7 +71,12 @@
             <td style="text-align: center;">
               {% if c.license_image %}
                 ✅
-              {% else %}
+            <td>
+              {% if c.license_image %}
+                <a href="{{ url_for('static', filename=c.license_image) }}" target="_blank">
+                  <img src="{{ url_for('static', filename=c.license_image) }}"
+                       alt="License for {{ c.name }}"
+                       style="max-height:40px; max-width:80px; border-radius:4px;">  {% else %}
                 —
               {% endif %}
             </td>
