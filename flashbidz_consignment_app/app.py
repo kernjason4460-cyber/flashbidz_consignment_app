@@ -62,6 +62,18 @@ if not _secret:
     _secret = os.urandom(32).hex()
 app.config["SECRET_KEY"] = _secret
 
+# Folder for driver's license images (under /static/licenses)
+LICENSE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "licenses")
+os.makedirs(LICENSE_UPLOAD_FOLDER, exist_ok=True)
+
+ALLOWED_LICENSE_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "pdf"}
+
+def allowed_license_file(filename):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in ALLOWED_LICENSE_EXTENSIONS
+    )
+
 # ===== Driver's license upload config =====
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 LICENSE_UPLOAD_FOLDER = os.path.join(BASE_DIR, "static", "licenses")
