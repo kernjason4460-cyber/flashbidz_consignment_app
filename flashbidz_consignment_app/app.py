@@ -1390,6 +1390,8 @@ def consignors_export():
 # CONSIGNORS: NEW (GET + POST)
 # ---------------------------
 
+# ---------------- Consignors: create ----------------
+
 @app.route("/consignors/new", methods=["GET", "POST"])
 @require_perm("consignors_edit")
 def consignor_create():
@@ -1403,13 +1405,13 @@ def consignor_create():
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
         license_file = request.files.get("license_image")
 
-        # Convert commission %
+        # Commission %
         try:
             commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
         except ValueError:
             commission_pct = 0.0
 
-        # Convert advance balance
+        # Advance balance
         try:
             advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
         except ValueError:
@@ -1440,7 +1442,7 @@ def consignor_create():
                 save_path = os.path.join(LICENSE_UPLOAD_FOLDER, filename)
                 license_file.save(save_path)
 
-                # store relative path for use with url_for('static', filename=...)
+                # store relative path for url_for('static', ...)
                 c.license_image = f"licenses/{filename}"
                 db.session.commit()
             else:
@@ -1449,79 +1451,66 @@ def consignor_create():
         flash("Consignor created.")
         return redirect(url_for("consignors_list"))
 
-    # GET: show empty form
+    # GET: show blank form
     return render_template("consignor_form.html", consignor=None)
 
 
-
-
-def get_settings():
-    s = Settings.query.get(1)
-    if not s:
-        s = Settings(id=1)
-        db.session.add(s)
-        db.session.commit()
-    return s
+# ---------------- Consignors: edit ----------------
 
 @app.route("/consignors/<int:cid>/edit", methods=["GET", "POST"])
-@require_perm("consignors:edit")
+@require_perm("consignors_edit")
 def consignors_edit(cid):
-    Consignor = db.Model._decl_class_registry.get("Consignor")
-    if not Consignor:
-        flash("Consignors table not found.")
-        return redirect(url_for("consignors_list"))
-
     c = Consignor.query.get_or_404(cid)
 
     if request.method == "POST":
-        c.name = (request.form.get("name") or "").strip()
-        c.email = (request.form.get("email") or "").strip() or None
-        c.phone = (request.form.get("phone") or "").strip() or None
-        c.notes = (request.form.get("notes") or "").strip() or None
-        consignor.commission_pct = commission_pct
-        consignor.advance_balance = advance_balance
-        
+        name = (request.form.get("name") or "").strip()
+        email = (request.form.get("email") or "").strip() or None
+        phone = (request.form.get("phone") or "").strip() or None
+        notes = request.form.get("notes") or None
+
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
-
-# If a new license file was uploaded, save it and update path
-if license_file and license_file.filename:
-    if allowed_license_file(license_file.filename):
-        ext = license_file.filename.rsplit(".", 1)[1].lower()
-        filename = secure_filename(f"license_{consignor.id}.{ext}")
-        save_path = os.path.join(LICENSE_UPLOAD_FOLDER, filename)
-
-        # (optional) delete old file
-        old_rel = consignor.license_image
-        if old_rel:
-            old_path = os.path.join(app.root_path, "static", old_rel)
-            try:
-                if os.path.exists(old_path):
-                    os.remove(old_path)
-            except OSError:
-                pass
-
-        license_file.save(save_path)
-        consignor.license_image = f"licenses/{filename}"
-    else:
-        flash("Invalid license file type. Allowed: png, jpg, jpeg, gif, pdf", "error")
-
-        try:
-            c.commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
-        except ValueError:
-            c.commission_pct = 0.0
-
-        try:
-            c.advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
-        except ValueError:
-            c.advance_balance = 0.0
-
-        # ----- Driver's license upload (optional update) -----
         license_file = request.files.get("license_image")
+
+        try:
+            commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
+        except ValueError:
+            commission_pct = 0.0
+
+        try:
+            advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
+        except ValueError:
+            advance_balance = 0.0
+
+        if not name:
+            flash("Name is required")
+            return render_template("consignor_form.html", consignor=c)
+
+        c.name = name
+        c.email = email
+        c.phone = phone
+        c.notes = notes
+        c.commission_pct = commission_pct
+        c.advance_balance = advance_balance
+
+        # Handle driver's license upload (replace or add)
         if license_file and license_file.filename:
-            if not allowed_license_file(license_file.filename):
-                flash("License image must be a JPG, PNG, GIF or PDF.")
-                return render_template("consignor_form.html", consignor=c)
+            if allowed_license_file(license_file.filename):
+                ext = license_file.filename.rsplit(".", 1)[1].lower()
+                filename = secure_filename(f"license_{c.id}.{ext}")
+                save_path = os.path.join(LICENSE_UPLOAD_FOLDER, filename)
+                license_file.save(save_path)
+                c.license_image = f"licenses/{filename}"
+            else:
+                flash("Invalid license file type. Allowed: png, jpg, jpeg, gif, pdf", "error")
+
+        db.session.commit()
+        flash("Consignor updated.")
+        return redirect(url_for("consignors_list"))
+
+    # GET: show populated form
+    return render_template("consignor_form.html", consignor=c)
+
 
             ext = license_file.filename.rsplit(".", 1)[1].lower()
             safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", c.name or "consignor")
