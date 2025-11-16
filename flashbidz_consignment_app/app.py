@@ -10,6 +10,9 @@ from email.message import EmailMessage
 from functools import wraps
 from decimal import Decimal
 from sqlalchemy import text
+from sqlalchemy import or_ 
+import io
+from flask import make_response
 
 from flask import Flask, request, session, redirect, url_for, render_template, flash, current_app, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -1165,6 +1168,50 @@ def parse_date(s):
         return None
 
 
+@app.route("/consignors/export")
+@require_perm("consignors:edit")
+def consignors_export():
+    consignors = Consignor.query.order_by(Consignor.created_at.asc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    writer.writerow([
+        "ID",
+        "Name",
+        "Email",
+        "Phone",
+        "Commission %",
+        "Advance Balance",
+        "Notes",
+        "License Image",
+        "Created At",
+        "Updated At",
+    ])
+
+    # Data rows
+    for c in consignors:
+        writer.writerow([
+            c.id,
+            c.name or "",
+            c.email or "",
+            c.phone or "",
+            c.commission_pct or 0,
+            c.advance_balance or 0,
+            (c.notes or "").replace("\n", " ").replace("\r", " "),
+            c.license_image or "",
+            c.created_at,
+            c.updated_at,
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    resp = make_response(csv_data)
+    resp.headers["Content-Type"] = "text/csv"
+    resp.headers["Content-Disposition"] = "attachment; filename=consignors.csv"
+    return resp
 @app.get("/consignors/<int:cid>/statement.csv")
 def consignor_statement_csv(cid):
     c = Consignor.query.get_or_404(cid)
@@ -1270,25 +1317,27 @@ def ensure_consignor_columns():
     except Exception as e:
         # If something weird happens, log it but don't kill the request
         app.logger.error(f"ensure_consignor_columns error: {e}")
+
 @app.route("/consignors")
-@require_perm("consignors:view")
+@require_perm("consignors:edit")
 def consignors_list():
-    ensure_consignor_columns()
-    
     q = (request.args.get("q") or "").strip()
 
-    # Base query
-    base_q = Consignor.query
+    query = Consignor.query
 
     if q:
         like = f"%{q}%"
-        base_q = base_q.filter(
-            db.or_(
+        query = query.filter(
+            or_(
                 Consignor.name.ilike(like),
                 Consignor.email.ilike(like),
                 Consignor.phone.ilike(like),
             )
         )
+
+    consignors = query.order_by(Consignor.created_at.desc()).all()
+    return render_template("consignors.html", consignors=consignors, search=q)
+
 
     consignors = base_q.order_by(Consignor.created_at.desc()).all()
 
