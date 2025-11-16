@@ -77,6 +77,26 @@
       <textarea name="notes">{{ consignor.notes if consignor else '' }}</textarea>
 
       <label>Driver's License Image</label>
+<div class="form-group">
+    <label for="license_image">Driver's License Image</label>
+    <input type="file" name="license_image" id="license_image" accept="image/*,.pdf">
+
+    {% if consignor and consignor.license_image %}
+        <p>
+            Current file:
+            <a href="{{ url_for('static', filename=consignor.license_image) }}" target="_blank">
+                View / Download
+            </a>
+        </p>
+
+        {# show a small preview only for images #}
+        {% if consignor.license_image.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')) %}
+            <img src="{{ url_for('static', filename=consignor.license_image) }}"
+                 alt="License image"
+                 style="max-width: 300px; max-height: 200px; display:block; margin-top:8px;">
+        {% endif %}
+    {% endif %}
+</div>
 
 {% if consignor and consignor.license_image %}
   <div style="margin-bottom: 8px;">
