@@ -1337,6 +1337,51 @@ def consignors_list():
 
     consignors = query.order_by(Consignor.created_at.desc()).all()
     return render_template("consignors.html", consignors=consignors, search=q)
+@app.route("/consignors/export")
+@require_perm("consignors:edit")
+def consignors_export():
+    consignors = Consignor.query.order_by(Consignor.created_at.asc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    writer.writerow([
+        "ID",
+        "Name",
+        "Email",
+        "Phone",
+        "Commission %",
+        "Advance Balance",
+        "Notes",
+        "License Image",
+        "Created At",
+        "Updated At",
+    ])
+
+    # Data rows
+    for c in consignors:
+        writer.writerow([
+            c.id,
+            c.name or "",
+            c.email or "",
+            c.phone or "",
+            c.commission_pct or 0,
+            c.advance_balance or 0,
+            (c.notes or "").replace("\n", " ").replace("\r", " "),
+            c.license_image or "",
+            c.created_at,
+            c.updated_at,
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    resp = make_response(csv_data)
+    resp.headers["Content-Type"] = "text/csv"
+    resp.headers["Content-Disposition"] = "attachment; filename=consignors.csv"
+    return resp
+
 
 
     consignors = base_q.order_by(Consignor.created_at.desc()).all()
