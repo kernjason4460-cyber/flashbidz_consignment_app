@@ -1402,6 +1402,8 @@ def consignor_create():
 
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
+        license_file = request.files.get("license_image")
+
 
         # Parse commission %
         try:
@@ -1410,6 +1412,15 @@ def consignor_create():
             commission_pct = 0.0
 
         # Parse advance balance
+        try:
+            advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
+        except ValueError:
+            advance_balance = 0.0
+        try:
+            commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
+        except ValueError:
+            commission_pct = 0.0
+
         try:
             advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
         except ValueError:
@@ -1444,11 +1455,24 @@ def consignor_create():
             notes=notes,
             commission_pct=commission_pct,
             advance_balance=advance_balance,
-            license_image=license_image,
+            license_image=none,
         )
         db.session.add(c)
         db.session.commit()
-        flash("Consignor created.")
+        # Handle driver's license file upload
+if license_file and license_file.filename:
+    if allowed_license_file(license_file.filename):
+        ext = license_file.filename.rsplit(".", 1)[1].lower()
+        filename = secure_filename(f"license_{c.id}.{ext}")
+        save_path = os.path.join(LICENSE_UPLOAD_FOLDER, filename)
+        license_file.save(save_path)
+
+        # store relative path under /static so url_for('static', ...) works
+        c.license_image = f"licenses/{filename}"
+        db.session.commit()
+    else:
+        flash("Invalid license file type. Allowed: png, jpg, jpeg, gif, pdf", "error")
+flash("Consignor created.")
         return redirect(url_for("consignors_list"))
 
     # GET – show blank form
@@ -1479,9 +1503,33 @@ def consignors_edit(cid):
         c.email = (request.form.get("email") or "").strip() or None
         c.phone = (request.form.get("phone") or "").strip() or None
         c.notes = (request.form.get("notes") or "").strip() or None
-
+        consignor.commission_pct = commission_pct
+        consignor.advance_balance = advance_balance
+        
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
+
+# If a new license file was uploaded, save it and update path
+if license_file and license_file.filename:
+    if allowed_license_file(license_file.filename):
+        ext = license_file.filename.rsplit(".", 1)[1].lower()
+        filename = secure_filename(f"license_{consignor.id}.{ext}")
+        save_path = os.path.join(LICENSE_UPLOAD_FOLDER, filename)
+
+        # (optional) delete old file
+        old_rel = consignor.license_image
+        if old_rel:
+            old_path = os.path.join(app.root_path, "static", old_rel)
+            try:
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            except OSError:
+                pass
+
+        license_file.save(save_path)
+        consignor.license_image = f"licenses/{filename}"
+    else:
+        flash("Invalid license file type. Allowed: png, jpg, jpeg, gif, pdf", "error")
 
         try:
             c.commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
