@@ -1,50 +1,10 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Consignors</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
-    main { max-width:1000px; margin:0 auto; padding:24px; }
-    h1 { margin-bottom:16px; }
-    .actions-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-    .btn { display:inline-block; padding:8px 14px; border-radius:8px; background:#e00000; color:#fff; text-decoration:none; font-weight:600; }
-    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
-    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
-    th { background:#fafafa; font-weight:700; }
-    tr:last-child td { border-bottom:none; }
-    .empty { color:#999; padding:16px 0; }
-    a.edit-link { color:#0077cc; text-decoration:none; }
-    a.edit-link:hover { text-decoration:underline; }
-  </style>
-</head>
-<body>
-  {% include "_navbar.html" %}
-  <main>
+{% include "_navbar.html" %}
+
+<main class="page">
   <div class="actions-bar">
     <h1>Consignors</h1>
-    <div>
-      <a class="btn" href="/consignors/new">+ New Consignor</a>
-      <a class="btn" href="/consignors/export">Export CSV</a>
-    </div>
+    <a class="btn" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
   </div>
-
-  <form method="get" action="/consignors" style="margin-bottom: 12px;">
-    <input
-      type="text"
-      name="q"
-      value="{{ search or '' }}"
-      placeholder="Search by name, email, or phone"
-      style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; min-width: 260px;"
-    >
-    <button type="submit" class="btn" style="padding: 6px 14px; margin-left: 4px;">
-      Search
-    </button>
-    {% if search %}
-      <a href="/consignors" style="margin-left: 8px; font-size: 13px;">Clear</a>
-    {% endif %}
-  </form>
 
   {% if consignors %}
     <table>
@@ -53,10 +13,9 @@
           <th>Name</th>
           <th>Email</th>
           <th>Phone</th>
-          <th>License</th>
           <th>Commission %</th>
           <th>Advance Balance ($)</th>
-          <th>DL Image</th>
+          <th>DL</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -68,16 +27,15 @@
             <td>{{ c.phone }}</td>
             <td>{{ "%.2f"|format(c.commission_pct or 0) }}</td>
             <td>{{ "%.2f"|format(c.advance_balance or 0) }}</td>
-            <td style="text-align: center;">
-              {% if c.license_image %}
-                ✅
             <td>
               {% if c.license_image %}
-                <a href="{{ url_for('static', filename=c.license_image) }}" target="_blank">
-                  <img src="{{ url_for('static', filename=c.license_image) }}"
-                       alt="License for {{ c.name }}"
-                       style="max-height:40px; max-width:80px; border-radius:4px;">  {% else %}
-                —
+                <img
+                  src="{{ url_for('static', filename='uploads/licenses/' ~ c.license_image) }}"
+                  alt="License for {{ c.name }}"
+                  style="height:40px;width:auto;border-radius:4px;"
+                >
+              {% else %}
+                -
               {% endif %}
             </td>
             <td>
@@ -91,6 +49,3 @@
     <p>No consignors yet.</p>
   {% endif %}
 </main>
-
-</body>
-</html>
