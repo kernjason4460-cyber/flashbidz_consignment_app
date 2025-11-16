@@ -1333,11 +1333,6 @@ def consignors_list():
 @app.route("/consignors/new", methods=["GET", "POST"])
 @require_perm("consignors:edit")
 def consignor_create():
-    Consignor = db.Model._decl_class_registry.get("Consignor")
-    if not Consignor:
-        flash("Consignors table not found.")
-        return redirect(url_for("home"))
-
     if request.method == "POST":
         # Text fields
         name = (request.form.get("name") or "").strip()
