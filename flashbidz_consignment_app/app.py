@@ -1458,7 +1458,7 @@ def consignor_create():
 # ---------------- Consignors: edit ----------------
 
 @app.route("/consignors/<int:cid>/edit", methods=["GET", "POST"])
-@require_perm("consignors_edit")
+@require_perm("consignors:edit")
 def consignors_edit(cid):
     c = Consignor.query.get_or_404(cid)
 
@@ -1470,56 +1470,45 @@ def consignors_edit(cid):
 
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
-        license_file = request.files.get("license_image")
 
         try:
-            commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
+            c.commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
         except ValueError:
-            commission_pct = 0.0
+            c.commission_pct = 0.0
 
         try:
-            advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
+            c.advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
         except ValueError:
-            advance_balance = 0.0
-
-        if not name:
-            flash("Name is required")
-            return render_template("consignor_form.html", consignor=c)
+            c.advance_balance = 0.0
 
         c.name = name
         c.email = email
         c.phone = phone
         c.notes = notes
-        c.commission_pct = commission_pct
-        c.advance_balance = advance_balance
 
         # Handle driver's license upload (replace or add)
+        license_file = request.files.get("license_image")
         if license_file and license_file.filename:
             if allowed_license_file(license_file.filename):
                 ext = license_file.filename.rsplit(".", 1)[1].lower()
-                filename = secure_filename(f"license_{c.id}.{ext}")
-                save_path = os.path.join(LICENSE_UPLOAD_FOLDER, filename)
+                safe_name = re.sub(r"[^A-Za-z0-9_-]", "_", c.name or "consignor")
+                fname = f"{safe_name}_{int(time.time())}.{ext}"
+                fname = secure_filename(fname)
+
+                save_path = os.path.join(app.config["LICENSE_UPLOAD_FOLDER"], fname)
                 license_file.save(save_path)
-                c.license_image = f"licenses/{filename}"
+                c.license_image = f"licenses/{fname}"
             else:
-                flash("Invalid license file type. Allowed: png, jpg, jpeg, gif, pdf", "error")
+                flash(
+                    "Invalid license file type. Allowed: png, jpg, jpeg, gif, pdf.",
+                    "error",
+                )
 
         db.session.commit()
         flash("Consignor updated.")
         return redirect(url_for("consignors_list"))
 
-    # GET: show populated form
-    return render_template("consignor_form.html", consignor=c)
-
-        db.session.commit()
-        flash("Consignor updated.")
-        return redirect(url_for("consignors_list"))
-
-    # GET – show form with existing data
-    return render_template("consignor_form.html", consignor=c)
-
-
-    # GET → show form with existing values
+    # GET – show populated form
     return render_template("consignor_form.html", consignor=c)
 
 @app.get("/admin")
