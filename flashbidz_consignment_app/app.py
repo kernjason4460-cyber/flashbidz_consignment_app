@@ -1391,63 +1391,35 @@ def consignors_export():
 # ---------------------------
 
 @app.route("/consignors/new", methods=["GET", "POST"])
-@require_perm("consignors:edit")
+@require_perm("consignors_edit")
 def consignor_create():
     if request.method == "POST":
-        # Text fields
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip() or None
         phone = (request.form.get("phone") or "").strip() or None
-        notes = (request.form.get("notes") or "").strip() or None
+        notes = request.form.get("notes") or None
 
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
         license_file = request.files.get("license_image")
 
-
-        # Parse commission %
+        # Convert commission %
         try:
             commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
         except ValueError:
             commission_pct = 0.0
 
-        # Parse advance balance
+        # Convert advance balance
         try:
             advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
         except ValueError:
             advance_balance = 0.0
-        try:
-            commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
-        except ValueError:
-            commission_pct = 0.0
-
-        try:
-            advance_balance = float(advance_balance_raw) if advance_balance_raw else 0.0
-        except ValueError:
-            advance_balance = 0.0
-
-        # ----- Driver's license upload -----
-        license_file = request.files.get("license_image")
-        license_image = None
-
-        if license_file and license_file.filename:
-            if not allowed_license_file(license_file.filename):
-                flash("License image must be a JPG, PNG, GIF or PDF.")
-                return render_template("consignor_form.html", consignor=None)
-
-            ext = license_file.filename.rsplit(".", 1)[1].lower()
-            safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", name or "consignor")
-            fname = f"{safe_name}_{int(time.time())}.{ext}"
-            fname = secure_filename(fname)
-
-            save_path = os.path.join(app.config["LICENSE_UPLOAD_FOLDER"], fname)
-            license_file.save(save_path)
-            license_image = fname
 
         if not name:
             flash("Name is required")
             return render_template("consignor_form.html", consignor=None)
 
+        # Create consignor (set license_image after we know the ID)
         c = Consignor(
             name=name,
             email=email,
@@ -1455,28 +1427,31 @@ def consignor_create():
             notes=notes,
             commission_pct=commission_pct,
             advance_balance=advance_balance,
-            license_image=none,
+            license_image=None,
         )
         db.session.add(c)
-        db.session.commit()
-        # Handle driver's license file upload
-if license_file and license_file.filename:
-    if allowed_license_file(license_file.filename):
-        ext = license_file.filename.rsplit(".", 1)[1].lower()
-        filename = secure_filename(f"license_{c.id}.{ext}")
-        save_path = os.path.join(LICENSE_UPLOAD_FOLDER, filename)
-        license_file.save(save_path)
+        db.session.commit()  # now c.id is available
 
-        # store relative path under /static so url_for('static', ...) works
-        c.license_image = f"licenses/{filename}"
-        db.session.commit()
-    else:
-        flash("Invalid license file type. Allowed: png, jpg, jpeg, gif, pdf", "error")
-flash("Consignor created.")
+        # Handle driver's license upload
+        if license_file and license_file.filename:
+            if allowed_license_file(license_file.filename):
+                ext = license_file.filename.rsplit(".", 1)[1].lower()
+                filename = secure_filename(f"license_{c.id}.{ext}")
+                save_path = os.path.join(LICENSE_UPLOAD_FOLDER, filename)
+                license_file.save(save_path)
+
+                # store relative path for use with url_for('static', filename=...)
+                c.license_image = f"licenses/{filename}"
+                db.session.commit()
+            else:
+                flash("Invalid license file type. Allowed: png, jpg, jpeg, gif, pdf", "error")
+
+        flash("Consignor created.")
         return redirect(url_for("consignors_list"))
 
-    # GET – show blank form
+    # GET: show empty form
     return render_template("consignor_form.html", consignor=None)
+
 
 
 
