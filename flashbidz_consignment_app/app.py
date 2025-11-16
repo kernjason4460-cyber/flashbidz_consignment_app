@@ -1511,16 +1511,6 @@ def consignors_edit(cid):
     # GET: show populated form
     return render_template("consignor_form.html", consignor=c)
 
-
-            ext = license_file.filename.rsplit(".", 1)[1].lower()
-            safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", c.name or "consignor")
-            fname = f"{safe_name}_{int(time.time())}.{ext}"
-            fname = secure_filename(fname)
-
-            save_path = os.path.join(app.config["LICENSE_UPLOAD_FOLDER"], fname)
-            license_file.save(save_path)
-            c.license_image = fname  # overwrite old value
-
         db.session.commit()
         flash("Consignor updated.")
         return redirect(url_for("consignors_list"))
