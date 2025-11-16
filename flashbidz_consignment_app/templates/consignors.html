@@ -29,15 +29,15 @@
             <td>{{ "%.2f"|format(c.advance_balance or 0) }}</td>
             <td>
               {% if c.license_image %}
-                <img
-                  src="{{ url_for('static', filename='uploads/licenses/' ~ c.license_image) }}"
-                  alt="License for {{ c.name }}"
-                  style="height:40px;width:auto;border-radius:4px;"
-                >
-              {% else %}
-                -
+                <a href="{{ url_for('static', filename='uploads/licenses/' ~ c.license_image) }}"
+                   target="_blank">
+                  <img src="{{ url_for('static', filename='uploads/licenses/' ~ c.license_image) }}"
+                       alt="DL"
+                       class="dl-thumb">
+                </a>
               {% endif %}
             </td>
+
             <td>
               <a class="edit-link" href="{{ url_for('consignors_edit', cid=c.id) }}">Edit</a>
             </td>
