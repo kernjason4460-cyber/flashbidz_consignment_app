@@ -1289,34 +1289,6 @@ def consignor_statement(consignor_id):
 # CONSIGNOR MANAGEMENT
 # =========================
 
-"""Make sure consignors table has commission_pct, advance_balance, license_image."""
-    try:
-        # Use a transaction that auto-commits
-        with db.engine.begin() as conn:
-            cols = conn.execute(text("PRAGMA table_info(consignors)")).fetchall()
-            names = {c[1] for c in cols}
-
-            # Add commission_pct if missing
-            if "commission_pct" not in names:
-                conn.execute(
-                    text("ALTER TABLE consignors ADD COLUMN commission_pct REAL DEFAULT 0")
-                )
-
-            # Add advance_balance if missing
-            if "advance_balance" not in names:
-                conn.execute(
-                    text("ALTER TABLE consignors ADD COLUMN advance_balance REAL DEFAULT 0")
-                )
-
-            # Add license_image if missing
-            if "license_image" not in names:
-                conn.execute(
-                    text("ALTER TABLE consignors ADD COLUMN license_image TEXT")
-                )
-    except Exception as e:
-        # If something weird happens, log it but don't kill the request
-        app.logger.error(f"ensure_consignor_columns error: {e}")
-
 @app.route("/consignors")
 @require_perm("consignors:edit")
 def consignors_list():
