@@ -1288,12 +1288,17 @@ def ensure_consignor_columns():
 @app.route("/consignors")
 @require_perm("consignors:edit")
 def consignors_list():
-    q = (request.args.get("q") or "").strip()
+    # Get query parameters
+    search = (request.args.get('search') or request.args.get('q') or '').strip()
+    sort_by = request.args.get('sort_by', 'created_at')
+    sort_dir = request.args.get('sort_dir', 'desc')
 
+    # Base query
     query = Consignor.query
 
-    if q:
-        like = f"%{q}%"
+    # Search functionality (name, email, phone)
+    if search:
+        like = f"%{search}%"
         query = query.filter(
             or_(
                 Consignor.name.ilike(like),
@@ -1302,8 +1307,36 @@ def consignors_list():
             )
         )
 
-    consignors = query.order_by(Consignor.created_at.desc()).all()
-    return render_template("consignors.html", consignors=consignors, search=q)
+    # Sorting map for allowed columns
+    sort_map = {
+        'name': Consignor.name,
+        'email': Consignor.email,
+        'phone': Consignor.phone,
+        'commission_pct': Consignor.commission_pct,
+        'advance_balance': Consignor.advance_balance,
+        'created_at': Consignor.created_at,
+        'updated_at': Consignor.updated_at,
+    }
+
+    # Choose column to sort by
+    sort_column = sort_map.get(sort_by, Consignor.created_at)
+
+    # Apply direction ASC / DESC
+    if sort_dir == 'asc':
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
+    consignors = query.all()
+
+    return render_template(
+        "consignors.html",
+        consignors=consignors,
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+    )
+
 @app.route("/consignors/export")
 @require_perm("consignors:edit")
 def consignors_export():
