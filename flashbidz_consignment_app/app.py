@@ -1262,11 +1262,12 @@ def consignor_statement(consignor_id):
 # CONSIGNOR MANAGEMENT
 # =========================
 def ensure_consignor_columns():
-      import sqlite3
-    # This assumes sqlite:///flashbidz.db style URI
-    db_uri = app.config['SQLALCHEMY_DATABASE_URI']
-    if not db_uri.startswith("sqlite:///"):
-        return  # only handle sqlite
+    import sqlite3
+
+    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
+    if not db_uri or not db_uri.startswith("sqlite:///"):
+        return  # Only handle SQLite
+
     db_path = db_uri.replace("sqlite:///", "")
 
     conn = sqlite3.connect(db_path)
@@ -1287,6 +1288,7 @@ def ensure_consignor_columns():
 
     conn.commit()
     conn.close()
+
 """Make sure consignors table has commission_pct, advance_balance, license_image."""
     try:
         # Use a transaction that auto-commits
