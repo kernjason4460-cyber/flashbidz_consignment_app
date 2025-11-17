@@ -55,28 +55,32 @@
         Name {{ sort_icon('name') }}
       </a>
     </th>
+
     <th>
       <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=email&sort_dir={{ 'desc' if sort_by == 'email' and sort_dir == 'asc' else 'asc' }}">
         Email {{ sort_icon('email') }}
       </a>
     </th>
+
     <th>
       <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=phone&sort_dir={{ 'desc' if sort_by == 'phone' and sort_dir == 'asc' else 'asc' }}">
         Phone {{ sort_icon('phone') }}
       </a>
     </th>
+
     <th>
       <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=commission_pct&sort_dir={{ 'desc' if sort_by == 'commission_pct' and sort_dir == 'asc' else 'asc' }}">
         Commission % {{ sort_icon('commission_pct') }}
       </a>
     </th>
+
     <th>
       <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=advance_balance&sort_dir={{ 'desc' if sort_by == 'advance_balance' and sort_dir == 'asc' else 'asc' }}">
         Advance Balance ($) {{ sort_icon('advance_balance') }}
       </a>
     </th>
 
-    <!-- Non-sortable columns -->
+    <!-- Leave these non-sortable -->
     <th>DL</th>
     <th>Actions</th>
   </tr>
