@@ -962,6 +962,11 @@ def item_sell(item_id):
     flash("Sale recorded")
     return redirect(url_for("items_list"))
 
+with app.app_context():
+    try:
+        ensure_consignor_columns()
+    except Exception as e:
+        app.logger.error(f"ensure_consignor_columns error: {e}")
 
 # Create tables if they don't exist
 with app.app_context():
@@ -1257,7 +1262,32 @@ def consignor_statement(consignor_id):
 # CONSIGNOR MANAGEMENT
 # =========================
 def ensure_consignor_columns():
-    """Make sure consignors table has commission_pct, advance_balance, license_image."""
+      import sqlite3
+    # This assumes sqlite:///flashbidz.db style URI
+    db_uri = app.config['SQLALCHEMY_DATABASE_URI']
+    if not db_uri.startswith("sqlite:///"):
+        return  # only handle sqlite
+    db_path = db_uri.replace("sqlite:///", "")
+
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+
+    cur.execute("PRAGMA table_info(consignors)")
+    cols = {row[1] for row in cur.fetchall()}
+
+    migrations = [
+        ("commission_pct", "REAL DEFAULT 0"),
+        ("advance_balance", "REAL DEFAULT 0"),
+        ("license_image", "TEXT"),
+    ]
+
+    for name, col_def in migrations:
+        if name not in cols:
+            cur.execute(f"ALTER TABLE consignors ADD COLUMN {name} {col_def}")
+
+    conn.commit()
+    conn.close()
+"""Make sure consignors table has commission_pct, advance_balance, license_image."""
     try:
         # Use a transaction that auto-commits
         with db.engine.begin() as conn:
