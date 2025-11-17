@@ -990,13 +990,12 @@ def ensure_consignor_columns():
     conn.commit()
     conn.close()
 
+
 with app.app_context():
     try:
         ensure_consignor_columns()
     except Exception as e:
         app.logger.error(f"ensure_consignor_columns error: {e}")
-
-
 
 # Create tables if they don't exist
 with app.app_context():
