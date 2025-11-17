@@ -1,24 +1,46 @@
 {% include "_navbar.html" %}
 
 <main class="page">
-  <div class="actions-bar">
-    <h1>Consignors</h1>
-    <a class="btn" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
-  </div>
+    <div class="actions-bar">
+        <h1>Consignors</h1>
+        <a class="btn" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
 
-  {% if consignors %}
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Commission %</th>
-          <th>Advance Balance ($)</th>
-          <th>DL</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+        <!-- Search Bar -->
+        <form method="get"
+              action="{{ url_for('consignors_list') }}"
+              class="search-form"
+              style="margin-top: 10px;">
+            
+            <input type="text"
+                   name="q"
+                   placeholder="Search by name, email, or phone"
+                   value="{{ search or '' }}"
+                   style="padding: 4px; width: 250px;">
+
+            <button type="submit" style="padding: 4px 10px;">Search</button>
+
+            {% if search %}
+                <a href="{{ url_for('consignors_list') }}" style="margin-left: 10px;">Clear</a>
+            {% endif %}
+        </form>
+        <!-- End Search Bar -->
+
+    </div>
+
+    {% if consignors %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Commission %</th>
+                    <th>Advance Balance ($)</th>
+                    <th>DL</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
       <tbody>
         {% for c in consignors %}
           <tr>
