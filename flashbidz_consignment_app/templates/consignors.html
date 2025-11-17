@@ -113,6 +113,34 @@
         {% endfor %}
       </tbody>
     </table>
+    <!-- Pagination summary -->
+    <div style="margin-top: 10px; font-size: 13px; color: #555;">
+        Showing {{ start_index }}–{{ end_index }} of {{ total }} consignors
+    </div>
+
+    <!-- Pagination controls -->
+    {% if total_pages > 1 %}
+    <div style="margin-top: 6px; font-size: 13px;">
+        {% if page > 1 %}
+            <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}&page={{ page - 1 }}"
+               style="margin-right: 6px;">« Prev</a>
+        {% endif %}
+
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+                <span style="margin: 0 3px; font-weight: bold;">{{ p }}</span>
+            {% else %}
+                <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}&page={{ p }}"
+                   style="margin: 0 3px;">{{ p }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page < total_pages %}
+            <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}&page={{ page + 1 }}"
+               style="margin-left: 6px;">Next »</a>
+        {% endif %}
+    </div>
+    {% endif %}
   {% else %}
     <p>No consignors yet.</p>
   {% endif %}
