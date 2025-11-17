@@ -961,6 +961,7 @@ def item_sell(item_id):
     db.session.commit()
     flash("Sale recorded")
     return redirect(url_for("items_list"))
+
 def ensure_consignor_columns():
     import sqlite3
 
@@ -991,33 +992,10 @@ def ensure_consignor_columns():
 
 with app.app_context():
     try:
-    def ensure_consignor_columns():
-    import sqlite3
+        ensure_consignor_columns()
+    except Exception as e:
+        app.logger.error(f"ensure_consignor_columns error: {e}")
 
-    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
-    if not db_uri or not db_uri.startswith("sqlite:///"):
-        return  # Only handle SQLite
-
-    db_path = db_uri.replace("sqlite:///", "")
-
-    conn = sqlite3.connect(db_path)
-    cur = conn.cursor()
-
-    cur.execute("PRAGMA table_info(consignors)")
-    cols = {row[1] for row in cur.fetchall()}
-
-    migrations = [
-        ("commission_pct", "REAL DEFAULT 0"),
-        ("advance_balance", "REAL DEFAULT 0"),
-        ("license_image", "TEXT"),
-    ]
-
-    for name, col_def in migrations:
-        if name not in cols:
-            cur.execute(f"ALTER TABLE consignors ADD COLUMN {name} {col_def}")
-
-    conn.commit()
-    conn.close()
 
 
 # Create tables if they don't exist
