@@ -1297,6 +1297,15 @@ def consignors_list():
     missing_dl_param = (request.args.get('missing_dl') or '').lower()
     missing_dl = missing_dl_param in ('1', 'true', 'yes', 'on')
 
+    # Pagination settings
+    try:
+        page = int(request.args.get('page', 1))
+    except ValueError:
+        page = 1
+    if page < 1:
+        page = 1
+    per_page = 25
+
     # Base query
     query = Consignor.query
 
@@ -1340,7 +1349,15 @@ def consignors_list():
     else:
         query = query.order_by(sort_column.desc())
 
-    consignors = query.all()
+    # Total count BEFORE limiting
+    total = query.count()
+
+    # Apply limit/offset for this page
+    offset = (page - 1) * per_page
+    consignors = query.offset(offset).limit(per_page).all()
+
+    # Total number of pages
+    pages = (total + per_page - 1) // per_page if total else 1
 
     return render_template(
         "consignors.html",
@@ -1349,7 +1366,12 @@ def consignors_list():
         sort_by=sort_by,
         sort_dir=sort_dir,
         missing_dl=missing_dl,
+        page=page,
+        pages=pages,
+        per_page=per_page,
+        total=total,
     )
+
 
 
 @app.route("/consignors/export")
