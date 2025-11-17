@@ -1291,8 +1291,6 @@ def consignor_statement(consignor_id):
 
 @app.route("/consignors")
 @require_perm("consignors:edit")
-@app.route("/consignors")
-@require_perm("consignors:edit")
 def consignors_list():
     # Get query parameters
     search = (request.args.get("search") or request.args.get("q") or "").strip()
