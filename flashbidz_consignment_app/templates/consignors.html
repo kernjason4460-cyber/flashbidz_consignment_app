@@ -18,23 +18,30 @@
         <a class="btn" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
 
         <!-- Search Bar -->
-        <form method="get"
-              action="{{ url_for('consignors_list') }}"
-              class="search-form"
-              style="margin-top: 10px;">
-            
-            <input type="text"
-                   name="q"
-                   placeholder="Search by name, email, or phone"
-                   value="{{ search or '' }}"
-                   style="padding: 4px; width: 250px;">
+       <form method="get"
+      action="{{ url_for('consignors_list') }}"
+      class="search-form"
+      style="margin-top: 10px;">
 
-            <button type="submit" style="padding: 4px 10px;">Search</button>
+  <input type="text"
+         name="q"
+         placeholder="Search by name, email, or phone"
+         value="{{ search or '' }}"
+         style="padding: 4px; width: 250px;">
 
-            {% if search %}
-                <a href="{{ url_for('consignors_list') }}" style="margin-left: 10px;">Clear</a>
-            {% endif %}
-        </form>
+  <label style="margin-left: 10px; font-size: 0.9em;">
+    <input type="checkbox"
+           name="missing_dl"
+           value="1"
+           {% if missing_dl %}checked{% endif %}>
+    Only show missing DL
+  </label>
+
+  <button type="submit" style="padding: 4px 10px;">Search</button>
+
+  <a href="{{ url_for('consignors_list') }}" style="margin-left: 10px;">Clear</a>
+</form>
+
         <!-- End Search Bar -->
 
     </div>
@@ -44,36 +51,37 @@
             <thead>
   <tr>
     <th>
-      <a href="?search={{ search }}&sort_by=name&sort_dir={{ 'desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc' }}">
+      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=name&sort_dir={{ 'desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc' }}">
         Name {{ sort_icon('name') }}
       </a>
     </th>
     <th>
-      <a href="?search={{ search }}&sort_by=email&sort_dir={{ 'desc' if sort_by == 'email' and sort_dir == 'asc' else 'asc' }}">
+      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=email&sort_dir={{ 'desc' if sort_by == 'email' and sort_dir == 'asc' else 'asc' }}">
         Email {{ sort_icon('email') }}
       </a>
     </th>
     <th>
-      <a href="?search={{ search }}&sort_by=phone&sort_dir={{ 'desc' if sort_by == 'phone' and sort_dir == 'asc' else 'asc' }}">
+      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=phone&sort_dir={{ 'desc' if sort_by == 'phone' and sort_dir == 'asc' else 'asc' }}">
         Phone {{ sort_icon('phone') }}
       </a>
     </th>
     <th>
-      <a href="?search={{ search }}&sort_by=commission_pct&sort_dir={{ 'desc' if sort_by == 'commission_pct' and sort_dir == 'asc' else 'asc' }}">
+      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=commission_pct&sort_dir={{ 'desc' if sort_by == 'commission_pct' and sort_dir == 'asc' else 'asc' }}">
         Commission % {{ sort_icon('commission_pct') }}
       </a>
     </th>
     <th>
-      <a href="?search={{ search }}&sort_by=advance_balance&sort_dir={{ 'desc' if sort_by == 'advance_balance' and sort_dir == 'asc' else 'asc' }}">
+      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=advance_balance&sort_dir={{ 'desc' if sort_by == 'advance_balance' and sort_dir == 'asc' else 'asc' }}">
         Advance Balance ($) {{ sort_icon('advance_balance') }}
       </a>
     </th>
 
-    <!-- Non-sortable columns stay the same -->
+    <!-- Non-sortable columns -->
     <th>DL</th>
     <th>Actions</th>
   </tr>
 </thead>
+
 
       <tbody>
         {% for c in consignors %}
