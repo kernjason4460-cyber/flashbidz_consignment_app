@@ -1293,6 +1293,10 @@ def consignors_list():
     sort_by = request.args.get('sort_by', 'created_at')
     sort_dir = request.args.get('sort_dir', 'desc')
 
+    # Missing DL filter (checkbox)
+    missing_dl_param = (request.args.get('missing_dl') or '').lower()
+    missing_dl = missing_dl_param in ('1', 'true', 'yes', 'on')
+
     # Base query
     query = Consignor.query
 
@@ -1304,6 +1308,15 @@ def consignors_list():
                 Consignor.name.ilike(like),
                 Consignor.email.ilike(like),
                 Consignor.phone.ilike(like),
+            )
+        )
+
+    # Filter to only consignors without a DL image
+    if missing_dl:
+        query = query.filter(
+            or_(
+                Consignor.license_image == None,
+                Consignor.license_image == ''
             )
         )
 
@@ -1335,7 +1348,9 @@ def consignors_list():
         search=search,
         sort_by=sort_by,
         sort_dir=sort_dir,
+        missing_dl=missing_dl,
     )
+
 
 @app.route("/consignors/export")
 @require_perm("consignors:edit")
