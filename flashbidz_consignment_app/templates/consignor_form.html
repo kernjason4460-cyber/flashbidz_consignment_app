@@ -97,6 +97,21 @@
         {% endif %}
     {% endif %}
 </div>
+{% if consignor and consignor.license_image %}
+<div class="form-group">
+    <label>Current driver's license on file</label><br>
+    <a href="{{ url_for('static', filename=consignor.license_image) }}" target="_blank">
+        <img
+            src="{{ url_for('static', filename=consignor.license_image) }}"
+            alt="Driver's license"
+            style="max-height: 120px; border: 1px solid #ccc; padding: 2px; background: #fff;"
+        >
+    </a>
+    <div style="font-size: 0.85rem; color: #666; margin-top: 4px;">
+        Click the image to view full size in a new tab.
+    </div>
+</div>
+{% endif %}
 
 {% if consignor and consignor.license_image %}
   <div style="margin-bottom: 8px;">
