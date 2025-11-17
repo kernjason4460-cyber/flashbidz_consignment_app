@@ -1291,29 +1291,19 @@ def consignor_statement(consignor_id):
 
 @app.route("/consignors")
 @require_perm("consignors:edit")
+@app.route("/consignors")
+@require_perm("consignors:edit")
 def consignors_list():
     # Get query parameters
-    search = (request.args.get('search') or request.args.get('q') or '').strip()
-    sort_by = request.args.get('sort_by', 'created_at')
-    sort_dir = request.args.get('sort_dir', 'desc')
-
-    # Missing DL filter (checkbox)
-    missing_dl_param = (request.args.get('missing_dl') or '').lower()
-    missing_dl = missing_dl_param in ('1', 'true', 'yes', 'on')
-
-    # Pagination settings
-    try:
-        page = int(request.args.get('page', 1))
-    except ValueError:
-        page = 1
-    if page < 1:
-        page = 1
-    per_page = 25
+    search = (request.args.get("search") or request.args.get("q") or "").strip()
+    sort_by = request.args.get("sort_by", "created_at")
+    sort_dir = request.args.get("sort_dir", "desc")
+    missing_dl = request.args.get("missing_dl") == "1"
 
     # Base query
     query = Consignor.query
 
-    # Search functionality (name, email, phone)
+    # Search by name / email / phone
     if search:
         like = f"%{search}%"
         query = query.filter(
@@ -1324,44 +1314,63 @@ def consignors_list():
             )
         )
 
-    # Filter to only consignors without a DL image
+    # Filter: only consignors missing a DL image
     if missing_dl:
         query = query.filter(
-            or_(
-                Consignor.license_image == None,
-                Consignor.license_image == ''
-            )
+            (Consignor.license_image == None) | (Consignor.license_image == "")
         )
 
-    # Sorting map for allowed columns
+    # Sorting map
     sort_map = {
-        'name': Consignor.name,
-        'email': Consignor.email,
-        'phone': Consignor.phone,
-        'commission_pct': Consignor.commission_pct,
-        'advance_balance': Consignor.advance_balance,
-        'created_at': Consignor.created_at,
-        'updated_at': Consignor.updated_at,
+        "name": Consignor.name,
+        "email": Consignor.email,
+        "phone": Consignor.phone,
+        "commission_pct": Consignor.commission_pct,
+        "advance_balance": Consignor.advance_balance,
+        "created_at": Consignor.created_at,
     }
 
-    # Choose column to sort by
     sort_column = sort_map.get(sort_by, Consignor.created_at)
 
-    # Apply direction ASC / DESC
-    if sort_dir == 'asc':
+    if sort_dir == "asc":
         query = query.order_by(sort_column.asc())
     else:
         query = query.order_by(sort_column.desc())
 
-    # Total count BEFORE limiting
+    # ---------- Pagination ----------
+    per_page = 25
+
+    try:
+        page = int(request.args.get("page", 1))
+    except (TypeError, ValueError):
+        page = 1
+    if page < 1:
+        page = 1
+
     total = query.count()
+    total_pages = max((total + per_page - 1) // per_page, 1)
 
-    # Apply limit/offset for this page
-    offset = (page - 1) * per_page
-    consignors = query.offset(offset).limit(per_page).all()
+    if page > total_pages:
+        page = total_pages
 
-    # Total number of pages
-    pages = (total + per_page - 1) // per_page if total else 1
+    consignors = (
+        query.offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    if total == 0:
+        start_index = 0
+        end_index = 0
+    else:
+        start_index = (page - 1) * per_page + 1
+        end_index = min(page * per_page, total)
+
+    # Helper for ▲ / ▼ icons
+    def sort_icon(col_name):
+        if col_name != sort_by:
+            return ""
+        return "▲" if sort_dir == "asc" else "▼"
 
     return render_template(
         "consignors.html",
@@ -1370,11 +1379,15 @@ def consignors_list():
         sort_by=sort_by,
         sort_dir=sort_dir,
         missing_dl=missing_dl,
+        sort_icon=sort_icon,
         page=page,
-        pages=pages,
         per_page=per_page,
         total=total,
+        total_pages=total_pages,
+        start_index=start_index,
+        end_index=end_index,
     )
+
 
 
 
