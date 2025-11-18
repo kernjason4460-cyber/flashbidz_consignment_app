@@ -13,6 +13,7 @@ from sqlalchemy import text
 from sqlalchemy import or_ 
 import io
 from flask import make_response
+from flask import Response
 
 from flask import Flask, request, session, redirect, url_for, render_template, flash, current_app, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -1386,6 +1387,88 @@ def consignors_list():
         end_index=end_index,
     )
 
+@app.route("/consignors/export")
+@require_perm("consignors:edit")
+def export_consignors():
+    # Use the same filters as the consignors list
+    search = (request.args.get("search") or request.args.get("q") or "").strip()
+    sort_by = request.args.get("sort_by", "created_at")
+    sort_dir = request.args.get("sort_dir", "desc")
+    missing_dl = request.args.get("missing_dl") == "1"
+
+    query = Consignor.query
+
+    # Apply search
+    if search:
+        like = f"%{search}%"
+        query = query.filter(
+            or_(
+                Consignor.name.ilike(like),
+                Consignor.email.ilike(like),
+                Consignor.phone.ilike(like),
+            )
+        )
+
+    # Apply "missing DL" filter
+    if missing_dl:
+        query = query.filter(
+            (Consignor.license_image == None) | (Consignor.license_image == "")
+        )
+
+    # Sorting map (same as consignors_list)
+    sort_map = {
+        "name": Consignor.name,
+        "email": Consignor.email,
+        "phone": Consignor.phone,
+        "commission_pct": Consignor.commission_pct,
+        "advance_balance": Consignor.advance_balance,
+        "created_at": Consignor.created_at,
+    }
+
+    sort_column = sort_map.get(sort_by, Consignor.created_at)
+
+    if sort_dir == "asc":
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
+    consignors = query.all()
+
+    # Build CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Header row
+    writer.writerow([
+        "Name",
+        "Email",
+        "Phone",
+        "Commission %",
+        "Advance Balance",
+        "DL Filename",
+        "Created At",
+        "Updated At",
+    ])
+
+    # Data rows
+    for c in consignors:
+        writer.writerow([
+            c.name or "",
+            c.email or "",
+            c.phone or "",
+            (c.commission_pct if c.commission_pct is not None else 0),
+            (c.advance_balance if c.advance_balance is not None else 0),
+            c.license_image or "",
+            getattr(c, "created_at", "") or "",
+            getattr(c, "updated_at", "") or "",
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    response = Response(csv_data, mimetype="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=consignors_export.csv"
+    return response
 
 
 
