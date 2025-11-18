@@ -1,0 +1,13 @@
+{% extends "admin.html" %}
+{% block content %}
+
+<h2>{{ consignor.name }}</h2>
+
+<p><strong>Email:</strong> {{ consignor.email }}</p>
+<p><strong>Phone:</strong> {{ consignor.phone }}</p>
+<p><strong>Commission %:</strong> {{ consignor.commission_pct }}</p>
+<p><strong>Advance Balance:</strong> {{ consignor.advance_balance }}</p>
+
+<a href="/consignors" class="btn btn-dark" style="margin-top:20px;">Back to Consignors</a>
+
+{% endblock %}
