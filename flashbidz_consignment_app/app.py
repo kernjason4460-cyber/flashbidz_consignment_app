@@ -1400,22 +1400,28 @@ def consignor_detail(consignor_id):
 
 
 def get_consignor_stats(consignor_id):
+    """Stats for a consignor based on items + payouts."""
+
+    # Total items they have in the system
     total_items = Item.query.filter_by(consignor_id=consignor_id).count()
 
-    # Items that actually have a sale price
+    # Items that actually have a sale price recorded
     sold_items = Item.query.filter(
         Item.consignor_id == consignor_id,
-        Item.sale_price != None   # changed from .isnot(None)
+        Item.sale_price_cents != None          # use the real DB column
     ).count()
 
-    # Sum of sale_price for those items
-    total_sales = db.session.query(
-        db.func.sum(Item.sale_price)
+    # Sum of sale_price_cents (stored as cents → convert to dollars)
+    total_sales_cents = db.session.query(
+        db.func.sum(Item.sale_price_cents)
     ).filter(
         Item.consignor_id == consignor_id,
-        Item.sale_price != None   # changed from .isnot(None)
+        Item.sale_price_cents != None
     ).scalar() or 0
 
+    total_sales = round(total_sales_cents / 100.0, 2)
+
+    # Payouts are already in dollars (assuming your Payout.amount is dollars)
     total_payouts = db.session.query(
         db.func.sum(Payout.amount)
     ).filter(
