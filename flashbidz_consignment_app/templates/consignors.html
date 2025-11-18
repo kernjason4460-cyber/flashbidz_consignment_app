@@ -141,37 +141,46 @@
 </thead>
 
 
-      <tbody>
-        {% for c in consignors %}
-          <tr>
-            <td>
-              <a href="{{ url_for('consignor_detail', consignor_id=c.id) }}">
-                  {{ c.name }}
-              </a>
-            </td>
+ <tbody>
+  {% for c in consignors %}
+    <tr>
+      <!-- NAME: link to consignor detail -->
+      <td>
+        <a href="{{ url_for('consignor_detail', consignor_id=c.id) }}">
+          {{ c.name }}
+        </a>
+      </td>
 
-            <td>{{ c.email }}</td>
-            <td>{{ c.phone }}</td>
-            <td>{{ "%.2f"|format(c.commission_pct or 0) }}</td>
-            <td>{{ "%.2f"|format(c.advance_balance or 0) }}</td>
-            <td>
-                {% if c.license_image %}
-                    <img src="/uploads/licenses/{{ c.license_image }}"
-                         alt="DL"
-                         style="width:40px;height:auto;border-radius:4px;border:1px solid #ccc;">
-                {% else %}
-                    <span style="color: #e60000; font-weight: bold;">No DL</span>
+      <!-- EMAIL -->
+      <td>{{ c.email or "-" }}</td>
 
-                {% endif %}
-            </td>
+      <!-- PHONE -->
+      <td>{{ c.phone or "-" }}</td>
 
+      <!-- COMMISSION % -->
+      <td>
+        {{ "%.2f"|format(c.commission_pct or 0) }}%
+      </td>
 
-            <td>
-              <a class="edit-link" href="{{ url_for('consignors_edit', cid=c.id) }}">Edit</a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
+      <!-- ADVANCE BALANCE -->
+      <td>
+        ${{ "%.2f"|format(c.advance_balance or 0) }}
+      </td>
+
+      <!-- DL THUMBNAIL (whatever you already had here) -->
+      <td>
+        {% if c.license_image %}
+          <img src="/static/uploads/licenses/{{ c.license_image }}"
+               alt="DL"
+               style="height:32px; width:auto; border-radius:3px;">
+        {% else %}
+          <span style="color:#e60000; font-weight:bold;">No DL</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+</tbody>
+
     </table>
     <!-- Pagination summary -->
     <div style="margin-top: 10px; font-size: 13px; color: #555;">
