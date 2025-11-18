@@ -144,7 +144,12 @@
       <tbody>
         {% for c in consignors %}
           <tr>
-            <td>{{ c.name }}</td>
+            <td>
+              <a href="{{ url_for('consignor_detail', consignor_id=c.id) }}">
+                  {{ c.name }}
+              </a>
+            </td>
+
             <td>{{ c.email }}</td>
             <td>{{ c.phone }}</td>
             <td>{{ "%.2f"|format(c.commission_pct or 0) }}</td>
