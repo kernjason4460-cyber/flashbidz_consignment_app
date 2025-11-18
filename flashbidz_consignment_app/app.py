@@ -1387,6 +1387,41 @@ def consignors_list():
         end_index=end_index,
     )
 
+@app.route("/consignors/<int:consignor_id>")
+def consignor_detail(consignor_id):
+    consignor = Consignor.query.get_or_404(consignor_id)
+
+    # We will add stats later
+    return render_template("consignor_detail.html", consignor=consignor)
+
+def get_consignor_stats(consignor_id):
+    total_items = Item.query.filter_by(consignor_id=consignor_id).count()
+    sold_items = Item.query.filter(
+        Item.consignor_id == consignor_id,
+        Item.sale_price.isnot(None)
+    ).count()
+
+    total_sales = db.session.query(
+        db.func.sum(Item.sale_price)
+    ).filter(
+        Item.consignor_id == consignor_id
+    ).scalar() or 0
+
+    total_payouts = db.session.query(
+        db.func.sum(Payout.amount)
+    ).filter(
+        Payout.consignor_id == consignor_id
+    ).scalar() or 0
+
+    balance = total_sales - total_payouts
+
+    return {
+        "total_items": total_items,
+        "sold_items": sold_items,
+        "total_sales": round(total_sales, 2),
+        "total_payouts": round(total_payouts, 2),
+        "balance": round(balance, 2)
+    }
 @app.route("/consignors/export")
 @require_perm("consignors:edit")
 def export_consignors():
