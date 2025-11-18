@@ -1390,14 +1390,8 @@ def consignors_list():
 @app.route("/consignors/<int:consignor_id>")
 @require_perm("consignors:edit")
 def consignor_detail(consignor_id):
-    consignor = Consignor.query.get_or_404(consignor_id)
-    stats = get_consignor_stats(consignor_id)
+    return f"TEST CONSIGNOR DETAIL PAGE – ID = {consignor_id}"
 
-    return render_template(
-        "consignor_detail.html",
-        consignor=consignor,
-        stats=stats,
-    )
 
 
 
