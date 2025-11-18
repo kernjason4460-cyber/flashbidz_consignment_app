@@ -23,7 +23,9 @@
     {% set stats = stats_by_id.get(c.id, {}) %}
     <tr>
       <td>
-        <a href="{{ url_for('consignors_detail', cid=c.id) }}">{{ c.name }}</a>
+        <a href="{{ url_for('consignor_detail', consignor_id=c.id) }}">
+          {{ c.name }}
+        </a>
       </td>
       <td>
         {% if c.email %}{{ c.email }}<br>{% endif %}
