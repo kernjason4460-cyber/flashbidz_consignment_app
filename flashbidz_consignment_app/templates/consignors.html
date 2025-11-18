@@ -17,20 +17,23 @@
       <h1>Consignors</h1>
       <a class="btn" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
     <a class="btn"
-       href="{{ url_for(
-                'export_consignors',
-                q=search,
-                missing_dl='1' if missing_dl else '',
-                sort_by=sort_by,
-                sort_dir=sort_dir
-             ) }}"
-       style="margin-left: 10px;
-              background-color: #007BFF;
-              color: white;
-              padding: 6px 10px;
-              border-radius: 4px;">
-      Export current results (CSV)
-    </a>
+   href="{{ url_for(
+            'export_consignors',
+            q=search,
+            missing_dl='1' if missing_dl else '',
+            sort_by=sort_by,
+            sort_dir=sort_dir
+         ) }}"
+   style="margin-left: 10px;
+          background-color: #e60000;
+          color: white;
+          padding: 6px 12px;
+          border-radius: 4px;
+          font-weight: bold;
+          border: none;">
+  Export Current Results (CSV)
+</a>
+
     </div>
 
         <!-- Search Bar -->
