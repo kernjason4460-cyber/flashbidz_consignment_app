@@ -1401,15 +1401,19 @@ def consignor_detail(consignor_id):
 
 def get_consignor_stats(consignor_id):
     total_items = Item.query.filter_by(consignor_id=consignor_id).count()
+
+    # Items that actually have a sale price
     sold_items = Item.query.filter(
         Item.consignor_id == consignor_id,
-        Item.sale_price.isnot(None)
+        Item.sale_price != None   # changed from .isnot(None)
     ).count()
 
+    # Sum of sale_price for those items
     total_sales = db.session.query(
         db.func.sum(Item.sale_price)
     ).filter(
-        Item.consignor_id == consignor_id
+        Item.consignor_id == consignor_id,
+        Item.sale_price != None   # changed from .isnot(None)
     ).scalar() or 0
 
     total_payouts = db.session.query(
@@ -1425,8 +1429,9 @@ def get_consignor_stats(consignor_id):
         "sold_items": sold_items,
         "total_sales": round(total_sales, 2),
         "total_payouts": round(total_payouts, 2),
-        "balance": round(balance, 2)
+        "balance": round(balance, 2),
     }
+
 @app.route("/consignors/export")
 @require_perm("consignors:edit")
 def export_consignors():
