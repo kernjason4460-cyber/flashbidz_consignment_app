@@ -1391,8 +1391,13 @@ def consignors_list():
 def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
 
-    # We will add stats later
-    return render_template("consignor_detail.html", consignor=consignor)
+    stats = get_consignor_stats(consignor_id)
+    return render_template(
+    "consignor_detail.html",
+    consignor=consignor,
+    stats=stats
+)
+
 
 def get_consignor_stats(consignor_id):
     total_items = Item.query.filter_by(consignor_id=consignor_id).count()
