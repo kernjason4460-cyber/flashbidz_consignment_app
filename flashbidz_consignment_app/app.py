@@ -2232,6 +2232,14 @@ def reports_dashboard():
     return render_template("reports_dashboard.html",
         inv=inv, sales=sales, top=top)
 
+@app.after_request
+def add_no_cache_headers(response):
+    # Prevent Safari/Chrome from caching admin pages
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
