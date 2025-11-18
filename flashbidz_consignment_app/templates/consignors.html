@@ -33,6 +33,42 @@
           border: none;">
   Export Current Results (CSV)
 </a>
+{% if missing_dl %}
+    <a class="btn"
+       href="{{ url_for(
+                'consignors_list_paginated',
+                search=search,
+                sort_by=sort_by,
+                sort_dir=sort_dir
+             ) }}"
+       style="margin-left: 10px;
+              background-color: #000000;
+              color: white;
+              padding: 6px 12px;
+              border-radius: 4px;
+              border: 2px solid #e60000;
+              font-weight: bold;">
+        Show All Consignors
+    </a>
+{% else %}
+    <a class="btn"
+       href="{{ url_for(
+                'consignors_list_paginated',
+                search=search,
+                missing_dl='1',
+                sort_by=sort_by,
+                sort_dir=sort_dir
+             ) }}"
+       style="margin-left: 10px;
+              background-color: #e60000;
+              color: white;
+              padding: 6px 12px;
+              border-radius: 4px;
+              border: none;
+              font-weight: bold;">
+        Show Only Missing DL
+    </a>
+{% endif %}
 
     </div>
 
@@ -120,7 +156,8 @@
                          alt="DL"
                          style="width:40px;height:auto;border-radius:4px;border:1px solid #ccc;">
                 {% else %}
-                    <span style="color:#aaa;">None</span>
+                    <span style="color: #e60000; font-weight: bold;">No DL</span>
+
                 {% endif %}
             </td>
 
