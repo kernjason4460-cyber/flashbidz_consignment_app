@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 
+<p style="margin-top: 8px;">
+  <a class="btn" href="{{ url_for('items_list', consignor_id=consignor.id) }}">
+    View all items for this consignor
+  </a>
+</p>
 
 <h2>{{ consignor.name }}</h2>
 <div style="display: flex; gap: 20px; margin: 20px 0;">
