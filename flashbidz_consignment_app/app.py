@@ -14,7 +14,6 @@ from sqlalchemy import or_
 import io
 from flask import make_response
 from flask import Response
-from flask_login import login_required
 
 from flask import Flask, request, session, redirect, url_for, render_template, flash, current_app, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -1409,7 +1408,6 @@ def consignors_list():
     )
 
 @app.route("/consignors/<int:consignor_id>")
-@login_required
 def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
     stats = get_consignor_item_stats(consignor_id)
