@@ -847,7 +847,9 @@ def item_create():
             db.session.add(c)
             db.session.flush()  # get c.id without a separate commit
         consignor_id = c.id
-
+    
+    asking_raw = request.form.get("asking") or "0"
+    asking = float(asking_raw)
     item = Item(
         sku=sku,
         title=title,
