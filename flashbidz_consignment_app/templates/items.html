@@ -156,6 +156,7 @@
 </html>
 l
 {% if page is defined and pages is defined %}
+{% if page is defined and pages is defined %}
 <div style="display:flex;gap:8px;justify-content:center;margin:16px 0">
   {% if page > 1 %}
     <a href="?s={{ s }}&status={{ status }}&ownership={{ ownership }}&category={{ category }}&page={{ page - 1 }}">« Prev</a>
@@ -166,5 +167,6 @@ l
   {% endif %}
 </div>
 {% endif %}
+
 
 
