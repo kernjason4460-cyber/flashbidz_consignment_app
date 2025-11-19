@@ -31,6 +31,39 @@
     th { background:#fafafa; font-weight:700; }
     .btn-light { background:#eee; color:#222; font-weight:600; padding:6px 8px; border-radius:8px; text-decoration:none; }
     .row-actions form { display:inline; }
+    /* Status pill badges */
+    .status-pill {
+      display:inline-block;
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:600;
+      text-transform:uppercase;
+    }
+
+    .status-available {
+      background:#e6ffe6;
+      color:#205c20;
+    }
+
+    .status-sold {
+      background:#ffe6e6;
+      color:#7a1010;
+    }
+
+    .status-pending {
+      background:#fff7d9;
+      color:#7a5a00;
+    }
+
+    /* Row highlights */
+    tbody tr.row-sold {
+      background:#fff3f3;
+    }
+
+    tbody tr.row-pending {
+      background:#fffbe6;
+    }
   </style>
 </head>
 <body>
@@ -66,7 +99,14 @@
       </thead>
       <tbody>
         {% for it in items %}
-        <tr>
+          <tr class="
+      {% if it.status == 'sold' %}
+        row-sold
+      {% elif it.status == 'pending' %}
+        row-pending
+      {% endif %}
+  ">
+
           <td>{{ it.id }}</td>
           <td>{{ it.sku }}</td>
           <td>{{ it.title }}</td>
@@ -74,7 +114,16 @@
           <td>{{ it.category or '' }}</td>
           <td>${{ '%.2f'|format(it.cost) }}</td>
           <td>${{ '%.2f'|format(it.asking) }}</td>
-          <td>{{ it.status }}</td>
+          <td>
+            {% if it.status %}
+              <span class="status-pill status-{{ it.status|lower }}">
+                {{ it.status }}
+              </span>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+
           <td>{% if it.sale_price_cents %}${{ '%.2f'|format(it.sale_price) }}{% endif %}</td>
           <td>{{ it.sale_date or '' }}</td>
           <td>{{ it.consignor or '' }}</td>
