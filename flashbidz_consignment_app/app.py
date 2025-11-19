@@ -1370,6 +1370,25 @@ def consignors_list():
         if col_name != sort_by:
             return ""
         return "▲" if sort_dir == "asc" else "▼"
+    # --- Consignor overview summary for the list page ---
+    total_consignors = db.session.query(db.func.count(Consignor.id)).scalar() or 0
+
+    missing_dl_count = (
+        Consignor.query
+        .filter((Consignor.license_image == None) | (Consignor.license_image == ""))
+        .count()
+    )
+
+    total_advance_balance = (
+        db.session.query(db.func.sum(Consignor.advance_balance))
+        .scalar() or 0
+    )
+
+    summary = {
+        "total_consignors": total_consignors,
+        "missing_dl": missing_dl_count,
+        "total_advance": round(float(total_advance_balance), 2),
+    }
 
     return render_template(
         "consignors.html",
@@ -1385,6 +1404,7 @@ def consignors_list():
         total_pages=total_pages,
         start_index=start_index,
         end_index=end_index,
+        summary=summary
     )
 
 @app.route("/consignors/<int:consignor_id>")
