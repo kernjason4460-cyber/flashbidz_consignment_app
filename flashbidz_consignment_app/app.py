@@ -1410,7 +1410,8 @@ def consignors_list():
 @app.route("/consignors/<int:consignor_id>")
 def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
-    stats = get_consignor_item_stats(consignor_id)
+    stats = get_consignor_stats(consignor_id)
+
 
     # Recent items for this consignor (new)
     items = (
