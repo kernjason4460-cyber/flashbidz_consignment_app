@@ -1,7 +1,7 @@
-{% extends "admin.html" %}
-{% block content %}
+{% include "_navbar.html" %}
 
 <main class="page">
+
   <h1>Consignor: {{ consignor.name }}</h1>
 
   <p style="margin-top: 4px; color: #666;">
@@ -12,59 +12,60 @@
 
   <!-- FlashBidz-style stat cards -->
   <div style="display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0;">
-    <div style="background:#000; color:#fff; padding:14px 18px; border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
+
+    <div style="background:#000; color:#fff; padding:14px 18px;
+                border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
       <div style="font-size:12px; opacity:0.8;">Total Items</div>
       <div style="font-size:24px; font-weight:bold;">{{ stats.total_items }}</div>
     </div>
 
-    <div style="background:#000; color:#fff; padding:14px 18px; border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
+    <div style="background:#000; color:#fff; padding:14px 18px;
+                border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
       <div style="font-size:12px; opacity:0.8;">Sold Items</div>
       <div style="font-size:24px; font-weight:bold;">{{ stats.sold_items }}</div>
     </div>
 
-    <div style="background:#000; color:#fff; padding:14px 18px; border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
+    <div style="background:#000; color:#fff; padding:14px 18px;
+                border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
       <div style="font-size:12px; opacity:0.8;">Total Sales</div>
       <div style="font-size:24px; font-weight:bold;">
-        ${{ "%.2f"|format(stats.total_sales or 0) }}
+        ${{ "%.2f"|format(stats.total_sales) }}
       </div>
     </div>
+
   </div>
 
-  <h2>Recent Items</h2>
-  <table border="1" cellpadding="4" cellspacing="0" style="margin-top:10px; width:100%; max-width:900px;">
-    <tr>
-      <th>ID</th>
-      <th>Title</th>
-      <th>Status</th>
-      <th>Sale Price</th>
-      <th>Created</th>
-    </tr>
-    {% for item in items %}
-      <tr>
-        <td>{{ item.id }}</td>
-        <td>{{ item.title }}</td>
-        <td>
-          {% if item.sale_price_cents %}
-            Sold
-          {% else %}
-            Active
-          {% endif %}
-        </td>
-        <td>
-          {% if item.sale_price_cents %}
-            ${{ "%.2f"|format(item.sale_price_cents / 100.0) }}
-          {% else %}
-            -
-          {% endif %}
-        </td>
-        <td>{{ item.created_at }}</td>
-      </tr>
-    {% else %}
-      <tr>
-        <td colspan="5">No items yet for this consignor.</td>
-      </tr>
-    {% endfor %}
-  </table>
-</main>
+  <h2 style="margin-top: 24px;">Recent Items</h2>
 
-{% endblock %}
+  {% if items %}
+    <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 8px; width: 100%; max-width: 900px;">
+      <tr>
+        <th align="left">Lot / Item</th>
+        <th align="left">Title</th>
+        <th align="left">Created</th>
+        <th align="left">Sale Price</th>
+      </tr>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.sku or "-" }}</td>
+          <td>
+            <a href="{{ url_for('items_edit', id=item.id) }}">
+              {{ item.title or "(no title)" }}
+            </a>
+          </td>
+          <td>{{ item.created_at or "" }}</td>
+          <td>
+            {% if item.sale_price_cents %}
+              ${{ "%.2f"|format(item.sale_price_cents / 100.0) }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No items for this consignor yet.</p>
+  {% endif %}
+
+</main>
