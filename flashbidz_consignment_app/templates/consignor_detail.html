@@ -2,90 +2,69 @@
 {% block content %}
 
 <main class="page">
-
   <h1>Consignor: {{ consignor.name }}</h1>
 
   <p style="margin-top: 4px; color: #666;">
-    Email: {{ consignor.email or "—" }} ·
-    Phone: {{ consignor.phone or "—" }} ·
+    Email: {{ consignor.email or "-" }} ·
+    Phone: {{ consignor.phone or "-" }} ·
     Commission: {{ "%.2f"|format(consignor.commission_pct or 0) }}%
   </p>
 
-  <!-- Stat cards -->
+  <!-- FlashBidz-style stat cards -->
   <div style="display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0;">
-
-    <div style="background:#000; color:#fff; padding:14px 18px;
-                border-left:4px solid #e60000; border-radius:6px; min-width:160px;">
+    <div style="background:#000; color:#fff; padding:14px 18px; border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
       <div style="font-size:12px; opacity:0.8;">Total Items</div>
       <div style="font-size:24px; font-weight:bold;">{{ stats.total_items }}</div>
     </div>
 
-    <div style="background:#000; color:#fff; padding:14px 18px;
-                border-left:4px solid #e60000; border-radius:6px; min-width:160px;">
+    <div style="background:#000; color:#fff; padding:14px 18px; border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
       <div style="font-size:12px; opacity:0.8;">Sold Items</div>
       <div style="font-size:24px; font-weight:bold;">{{ stats.sold_items }}</div>
     </div>
 
-    <div style="background:#000; color:#fff; padding:14px 18px;
-                border-left:4px solid #e60000; border-radius:6px; min-width:180px;">
+    <div style="background:#000; color:#fff; padding:14px 18px; border-left:4px solid #e00000; border-radius:6px; min-width:160px;">
       <div style="font-size:12px; opacity:0.8;">Total Sales</div>
       <div style="font-size:24px; font-weight:bold;">
-        ${{ "%.2f"|format(stats.total_sales) }}
+        ${{ "%.2f"|format(stats.total_sales or 0) }}
       </div>
     </div>
-
   </div>
 
-  <h2 style="margin-top: 10px;">Items for this consignor</h2>
-
-  {% if items %}
-    <table class="table" style="margin-top: 10px; width:100%; border-collapse: collapse;">
-      <thead>
-        <tr>
-          <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">SKU</th>
-          <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Title</th>
-          <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Status</th>
-          <th style="text-align:right; padding:6px; border-bottom:1px solid #ccc;">Sale Price</th>
-          <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Sale Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-          <tr>
-            <td style="padding:6px; border-bottom:1px solid #eee;">{{ item.sku }}</td>
-            <td style="padding:6px; border-bottom:1px solid #eee;">
-              {{ item.title }}
-            </td>
-            <td style="padding:6px; border-bottom:1px solid #eee;">
-              {{ item.status }}
-            </td>
-            <td style="padding:6px; border-bottom:1px solid #eee; text-align:right;">
-              {% if item.sale_price_cents is not none %}
-                ${{ "%.2f"|format(item.sale_price_cents / 100.0) }}
-              {% else %}
-                —
-              {% endif %}
-            </td>
-            <td style="padding:6px; border-bottom:1px solid #eee;">
-              {{ item.sale_date or "—" }}
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p style="margin-top:10px;">No items found for this consignor yet.</p>
-  {% endif %}
-
-  <p style="margin-top: 20px;">
-    <a href="{{ url_for('consignors_list') }}"
-       class="btn"
-       style="background:#000; color:#fff; padding:6px 12px;
-              border-radius:4px; border:1px solid #e60000;">
-      ← Back to Consignors
-    </a>
-  </p>
-
+  <h2>Recent Items</h2>
+  <table border="1" cellpadding="4" cellspacing="0" style="margin-top:10px; width:100%; max-width:900px;">
+    <tr>
+      <th>ID</th>
+      <th>Title</th>
+      <th>Status</th>
+      <th>Sale Price</th>
+      <th>Created</th>
+    </tr>
+    {% for item in items %}
+      <tr>
+        <td>{{ item.id }}</td>
+        <td>{{ item.title }}</td>
+        <td>
+          {% if item.sale_price_cents %}
+            Sold
+          {% else %}
+            Active
+          {% endif %}
+        </td>
+        <td>
+          {% if item.sale_price_cents %}
+            ${{ "%.2f"|format(item.sale_price_cents / 100.0) }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>{{ item.created_at }}</td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="5">No items yet for this consignor.</td>
+      </tr>
+    {% endfor %}
+  </table>
 </main>
 
 {% endblock %}
