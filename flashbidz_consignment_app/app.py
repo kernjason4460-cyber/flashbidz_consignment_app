@@ -1393,7 +1393,8 @@ def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
 
     # Stats from items
-    stats = get_consignor_item_stats(consignor.id)
+      stats = get_consignor_stats(consignor.id)
+
 
     # All items for this consignor (newest first)
     items = Item.query.filter_by(consignor_id=consignor.id) \
