@@ -70,6 +70,35 @@
 {% endif %}
 
     </div>
+  {% if summary %}
+  <div style="display:flex; flex-wrap:wrap; gap:16px; margin:12px 0 20px 0;">
+
+    <div style="background:#000; color:#fff; padding:10px 14px;
+                border-left:4px solid #e00000; border-radius:6px; min-width:180px;">
+      <div style="font-size:12px; opacity:0.8;">Total Consignors</div>
+      <div style="font-size:22px; font-weight:bold;">
+        {{ summary.total_consignors }}
+      </div>
+    </div>
+
+    <div style="background:#000; color:#fff; padding:10px 14px;
+                border-left:4px solid #e00000; border-radius:6px; min-width:180px;">
+      <div style="font-size:12px; opacity:0.8;">Missing License on File</div>
+      <div style="font-size:22px; font-weight:bold;">
+        {{ summary.missing_dl }}
+      </div>
+    </div>
+
+    <div style="background:#000; color:#fff; padding:10px 14px;
+                border-left:4px solid #e00000; border-radius:6px; min-width:220px;">
+      <div style="font-size:12px; opacity:0.8;">Total Advance Balance</div>
+      <div style="font-size:22px; font-weight:bold;">
+        ${{ "%.2f"|format(summary.total_advance) }}
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
 
         <!-- Search Bar -->
        <form method="get"
