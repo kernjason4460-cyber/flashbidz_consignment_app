@@ -31,6 +31,58 @@
     </div>
 
 </div>
+  {% if items %}
+  <h2 style="margin-top: 30px; font-size: 22px;">Recent Items</h2>
+
+  <table border="0" cellpadding="6" cellspacing="0" style="width:100%; border-collapse:collapse; margin-top:10px;">
+    <thead>
+      <tr style="background:#000; color:#fff;">
+        <th align="left">ID</th>
+        <th align="left">Title</th>
+        <th align="left">SKU</th>
+        <th align="left">Status</th>
+        <th align="left">Created</th>
+        <th align="right">Sale Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr style="background: {{ loop.index0 % 2 == 0 and '#111' or '#1a1a1a' }}; color:#eee;">
+        <td>#{{ item.id }}</td>
+        <td>
+          {{ item.title or item.name or ('Item #' ~ item.id) }}
+        </td>
+        <td>{{ item.sku or '' }}</td>
+        <td>
+          {% if item.sale_price_cents %}
+            <span style="background:#064f25; color:#fff; padding:2px 6px; border-radius:10px; font-size:11px;">
+              Sold
+            </span>
+          {% else %}
+            <span style="background:#444; color:#fff; padding:2px 6px; border-radius:10px; font-size:11px;">
+              Active / Unsold
+            </span>
+          {% endif %}
+        </td>
+        <td>
+          {{ item.created_at.strftime("%Y-%m-%d") if item.created_at else "" }}
+        </td>
+        <td align="right">
+          {% if item.sale_price_cents %}
+            ${{ '%.2f'|(item.sale_price_cents / 100.0) }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="margin-top: 30px; color:#aaa;">
+    No items found for this consignor yet.
+  </p>
+  {% endif %}
 
 <p><strong>Email:</strong> {{ consignor.email }}</p>
 <p><strong>Phone:</strong> {{ consignor.phone }}</p>
