@@ -97,63 +97,51 @@
           <th></th>
         </tr>
       </thead>
-      <tbody>
-        {% for it in items %}
-          <tr class="
-      {% if it.status == 'sold' %}
-        row-sold
-      {% elif it.status == 'pending' %}
-        row-pending
-      {% endif %}
-  ">
+       <tbody>
+    {% for it in items %}
+      <tr>
+        <td>{{ it.id }}</td>
+        <td>{{ it.sku }}</td>
+        <td>{{ it.title }}</td>
+        <td>{{ it.ownership }}</td>
+        <td>{{ it.category or '' }}</td>
+        <td>${{ '%.2f'|format(it.cost) }}</td>
+        <td>${{ '%.2f'|format(it.asking) }}</td>
+        <td>{{ it.status }}</td>
+        <td>
+          {% if it.sale_price_cents %}
+            ${{ '%.2f'|format(it.sale_price) }}
+          {% endif %}
+        </td>
+        <td>{{ it.sale_date or '' }}</td>
+        <td>{{ it.consignor or '' }}</td>
+        <td>{{ it.buyer or '' }}</td>
+        <td class="row-actions">
+          {# small barcode preview #}
+          {% if it.sku %}
+            <img src="/barcode/{{ it.sku }}.png"
+                 alt="barcode"
+                 style="height:36px;vertical-align:middle;margin-right:8px"
+                 loading="lazy">
+          {% endif %}
 
-          <td>{{ it.id }}</td>
-          <td>{{ it.sku }}</td>
-          <td>{{ it.title }}</td>
-          <td>{{ it.ownership }}</td>
-          <td>{{ it.category or '' }}</td>
-          <td>${{ '%.2f'|format(it.cost) }}</td>
-          <td>${{ '%.2f'|format(it.asking) }}</td>
-          <td>
-            {% if it.status %}
-              <span class="status-pill status-{{ it.status|lower }}">
-                {{ it.status }}
-              </span>
-            {% else %}
-              -
-            {% endif %}
-          </td>
+          {# print label in a new tab #}
+          <a class="btn-light" href="/items/{{ it.id }}/print" target="_blank">Label</a>
 
-          <td>{% if it.sale_price_cents %}${{ '%.2f'|format(it.sale_price) }}{% endif %}</td>
-          <td>{{ it.sale_date or '' }}</td>
-          <td>{{ it.consignor or '' }}</td>
-          <td>{{ it.buyer or '' }}</td>
-          <td class="row-actions">
-  <!-- small barcode preview -->
-  {% if it.sku %}
-    <img src="/barcode/{{ it.sku }}.png"
-         alt="barcode"
-         style="height:36px;vertical-align:middle;margin-right:8px"
-         loading="lazy">
-  {% endif %}
+          {# existing buttons #}
+          <a class="btn-light" href="/items/{{ it.id }}/edit">Edit</a>
+          <a class="btn-light" href="/items/{{ it.id }}/sell">Sell</a>
+        </td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="12" style="text-align:center;color:#666">No items yet.</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-  <!-- print label in a new tab -->
-  <a class="btn-light" href="/items/{{ it.id }}/print" target="_blank">Label</a>
-
-  <!-- keep your existing buttons next to it if you want -->
-  <a class="btn-light" href="/items/{{ it.id }}/edit">Edit</a>
-  <a class="btn-light" href="/items/{{ it.id }}/sell">Sell</a>
-</td>
-
-        </tr>
-        {% else %}
-        <tr><td colspan="12" style="text-align:center;color:#666">No items yet.</td></tr>
-        {% endfor %}
-           {% endif %}
-    </tbody>
-  </table>
-
-  {% if page is defined and pages is defined %}
+{% if page is defined and pages is defined %}
   <div style="display:flex;gap:8px;justify-content:center;margin:16px 0">
     {% if page > 1 %}
       <a href="?s={{ s }}&status={{ status }}&ownership={{ ownership }}&category={{ category }}&page={{ page - 1 }}">« Prev</a>
@@ -165,11 +153,8 @@
       <a href="?s={{ s }}&status={{ status }}&ownership={{ ownership }}&category={{ category }}&page={{ page + 1 }}">Next »</a>
     {% endif %}
   </div>
-  {% endif %}
+{% endif %}
 
 </main>
 </body>
 </html>
-
-
-
