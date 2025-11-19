@@ -742,7 +742,6 @@ from sqlalchemy import func
 @require_perm("data:import")
 @require_perm("reports:view")
 @app.get("/items")
-@login_required
 def items_list():
     # NEW: optional filter by consignor
     consignor_id = request.args.get("consignor_id", type=int)
