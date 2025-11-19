@@ -1,4 +1,4 @@
-{% extends "admin.html" %}
+{% extends "base.html" %}
 {% block content %}
 
 <main class="page">
@@ -11,7 +11,7 @@
     Commission: {{ "%.2f"|format(consignor.commission_pct or 0) }}%
   </p>
 
-  <!-- FlashBidz-style stat cards -->
+  <!-- Stat cards -->
   <div style="display: flex; flex-wrap: wrap; gap: 16px; margin: 20px 0;">
 
     <div style="background:#000; color:#fff; padding:14px 18px;
@@ -34,25 +34,8 @@
       </div>
     </div>
 
-    <div style="background:#000; color:#fff; padding:14px 18px;
-                border-left:4px solid #e60000; border-radius:6px; min-width:180px;">
-      <div style="font-size:12px; opacity:0.8;">Total Payouts</div>
-      <div style="font-size:24px; font-weight:bold;">
-        ${{ "%.2f"|format(stats.total_payouts) }}
-      </div>
-    </div>
-
-    <div style="background:#000; color:#fff; padding:14px 18px;
-                border-left:4px solid #e60000; border-radius:6px; min-width:180px;">
-      <div style="font-size:12px; opacity:0.8;">Balance</div>
-      <div style="font-size:24px; font-weight:bold;">
-        ${{ "%.2f"|format(stats.balance) }}
-      </div>
-    </div>
-
   </div>
 
-  <!-- Items table -->
   <h2 style="margin-top: 10px;">Items for this consignor</h2>
 
   {% if items %}
