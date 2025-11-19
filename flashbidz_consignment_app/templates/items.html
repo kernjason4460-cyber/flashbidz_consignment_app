@@ -37,6 +37,12 @@
   {% include "_navbar.html" %}
   <main>
     <h1>Items</h1>
+{% if consignor_id %}
+  <p style="margin-top: 4px; color: #666;">
+    Showing items for consignor ID {{ consignor_id }}.
+    <a href="{{ url_for('items_list') }}">Show all items</a>
+  </p>
+{% endif %}
 <p><a class="btn" href="/items/new">+ New Item</a></p>
 
 
