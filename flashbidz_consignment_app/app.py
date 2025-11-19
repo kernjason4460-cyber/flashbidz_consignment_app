@@ -1392,14 +1392,15 @@ def consignors_list():
 def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
 
-    # Stats from items
-      stats = get_consignor_stats(consignor.id)
+    # Use the stats helper we just defined
+    stats = get_consignor_stats(consignor.id)
 
-
-    # All items for this consignor (newest first)
-    items = Item.query.filter_by(consignor_id=consignor.id) \
-                      .order_by(Item.created_at.desc()) \
-                      .all()
+    items = (
+        Item.query
+        .filter_by(consignor_id=consignor.id)
+        .order_by(Item.created_at.desc())
+        .all()
+    )
 
     return render_template(
         "consignor_detail.html",
@@ -1409,43 +1410,37 @@ def consignor_detail(consignor_id):
     )
 
 
-def get_consignor_stats(consignor_id):
-    """Stats for a consignor based on items + payouts."""
 
-    # Total items they have in the system
+def get_consignor_stats(consignor_id):
+    """Basic stats for a consignor based on the items table."""
+    # Total items they have
     total_items = Item.query.filter_by(consignor_id=consignor_id).count()
 
-    # Items that actually have a sale price recorded
-    sold_items = Item.query.filter(
-        Item.consignor_id == consignor_id,
-        Item.sale_price_cents != None          # use the real DB column
-    ).count()
+    # How many items have a sale price
+    sold_items = (
+        Item.query
+        .filter(
+            Item.consignor_id == consignor_id,
+            Item.sale_price_cents != None
+        )
+        .count()
+    )
 
-    # Sum of sale_price_cents (stored as cents → convert to dollars)
-    total_sales_cents = db.session.query(
-        db.func.sum(Item.sale_price_cents)
-    ).filter(
-        Item.consignor_id == consignor_id,
-        Item.sale_price_cents != None
-    ).scalar() or 0
-
+    # Sum of sale_price_cents (cents -> dollars)
+    total_sales_cents = (
+        db.session.query(db.func.sum(Item.sale_price_cents))
+        .filter(
+            Item.consignor_id == consignor_id,
+            Item.sale_price_cents != None
+        )
+        .scalar() or 0
+    )
     total_sales = round(total_sales_cents / 100.0, 2)
-
-    # Payouts are already in dollars (assuming your Payout.amount is dollars)
-    total_payouts = db.session.query(
-        db.func.sum(Payout.amount)
-    ).filter(
-        Payout.consignor_id == consignor_id
-    ).scalar() or 0
-
-    balance = total_sales - total_payouts
 
     return {
         "total_items": total_items,
         "sold_items": sold_items,
-        "total_sales": round(total_sales, 2),
-        "total_payouts": round(total_payouts, 2),
-        "balance": round(balance, 2),
+        "total_sales": total_sales,
     }
 
 @app.route("/consignors/export")
