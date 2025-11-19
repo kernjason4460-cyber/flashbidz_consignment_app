@@ -51,6 +51,61 @@
         Show All Consignors
     </a>
 {% else %}
+  {% if summary and summary.missing_dl %}
+  <div style="
+      background:#330000;
+      color:#fff;
+      padding:10px 14px;
+      border-left:4px solid #e00000;
+      border-radius:8px;
+      margin:0 0 20px 0;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+  ">
+    <div style="font-size:14px;">
+      <strong>{{ summary.missing_dl }}</strong> consignor{{ summary.missing_dl != 1 and 's' or '' }}
+      are missing a driver’s license image.
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:6px;">
+      <a href="{{ url_for('consignors_list',
+                          q=q,
+                          sort_by=sort_by,
+                          sort_dir=sort_dir,
+                          missing_dl=1) }}"
+         style="
+           background:#e00000;
+           color:#fff;
+           padding:6px 10px;
+           border-radius:4px;
+           text-decoration:none;
+           font-size:13px;
+           font-weight:600;
+         ">
+        View only missing licenses
+      </a>
+
+      {% if missing_dl %}
+      <a href="{{ url_for('consignors_list',
+                          q=q,
+                          sort_by=sort_by,
+                          sort_dir=sort_dir) }}"
+         style="
+           background:#555;
+           color:#fff;
+           padding:6px 10px;
+           border-radius:4px;
+           text-decoration:none;
+           font-size:13px;
+         ">
+        Show all consignors
+      </a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
     <a class="btn"
        href="{{ url_for(
                 'consignors_list',
