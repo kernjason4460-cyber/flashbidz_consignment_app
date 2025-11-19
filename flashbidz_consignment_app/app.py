@@ -1408,17 +1408,17 @@ def consignors_list():
     )
 
 @app.route("/consignors/<int:consignor_id>")
-@require_perm("consignors:edit")
+@login_required
 def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
+    stats = get_consignor_item_stats(consignor_id)
 
-    # Use the stats helper we just defined
-    stats = get_consignor_stats(consignor.id)
-
+    # Recent items for this consignor (new)
     items = (
         Item.query
-        .filter_by(consignor_id=consignor.id)
+        .filter_by(consignor_id=consignor_id)
         .order_by(Item.created_at.desc())
+        .limit(50)
         .all()
     )
 
@@ -1428,6 +1428,7 @@ def consignor_detail(consignor_id):
         stats=stats,
         items=items,
     )
+
 
 
 
