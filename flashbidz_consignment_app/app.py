@@ -997,9 +997,12 @@ def ensure_consignor_columns():
     conn.commit()
     conn.close()
 
-
 with app.app_context():
-    ensure_consignor_columns()
+    try:
+        ensure_consignor_columns()
+    except Exception as e:
+        app.logger.warning(f"ensure_consignor_columns skipped: {e}")
+
 
 # Create tables if they don't exist
 with app.app_context():
