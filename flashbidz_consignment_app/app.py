@@ -634,7 +634,7 @@ ownership = db.Column(db.String(20), nullable=False, default="owned")
 # Pricing
 # your cost (None/0 for consigned if you wish)
 cost_cents = db.Column(db.Integer, nullable=True)
-asking_cents = db.Column(db.Integer,
+asking= db.Column(db.Integer,
                          nullable=True)   # optional asking price
 
 # Sales
@@ -856,7 +856,7 @@ def item_create():
         category=category,
         ownership=ownership,
         cost_cents=cost_cents,
-        asking_cents=asking_cents,
+        asking=asking,
         status="available",
         notes=notes,
         consignor=consignor_name,
@@ -897,7 +897,7 @@ def item_update(item_id):
     item.ownership = request.form.get("ownership", "owned").strip()
     item.category = request.form.get("category", "").strip() or None
     item.cost_cents = dollars_to_cents(request.form.get("cost", ""))
-    item.asking_cents = dollars_to_cents(request.form.get("asking", ""))
+    item.asking = dollars_to_cents(request.form.get("asking", ""))
     item.consignor = request.form.get("consignor", "").strip() or None
     item.notes = request.form.get("notes", "").strip() or None
     db.session.commit()
