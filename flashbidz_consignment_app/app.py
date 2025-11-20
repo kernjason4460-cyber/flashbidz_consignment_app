@@ -408,10 +408,6 @@ class Item(db.Model):
         return (self.cost_cents or 0) / 100.0
 
     @property
-    def asking(self):
-        return (self.price_cents or 0) / 100.0
-
-    @property
     def sale_price(self):
         return (self.sale_price_cents or 0) / 100.0
 
@@ -634,8 +630,8 @@ ownership = db.Column(db.String(20), nullable=False, default="owned")
 # Pricing
 # your cost (None/0 for consigned if you wish)
 cost_cents = db.Column(db.Integer, nullable=True)
-asking= db.Column(db.Integer,
-                         nullable=True)   # optional asking price
+asking = db.Column(db.Float, nullable=True)
+   # optional asking price
 
 # Sales
 status = db.Column(
@@ -665,9 +661,6 @@ updated_at = db.Column(
 @property
 def cost(self): return (self.cost_cents or 0) / 100
 
-
-@property
-def asking(self): return (self.asking_cents or 0) / 100
 @property
 def sale_price(self): return (self.sale_price_cents or 0) / 100
 
