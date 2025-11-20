@@ -408,11 +408,6 @@ class Item(db.Model):
     def cost(self):
         return (self.cost_cents or 0) / 100.0
 
-        @property
-    def asking(self):
-        # display in dollars in templates
-        return (self.asking_cents or 0) / 100.0
-    
     @property
     def sale_price(self):
         return (self.sale_price_cents or 0) / 100.0
