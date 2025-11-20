@@ -54,7 +54,7 @@
         </div>
         <div>
           <label>Asking ($)</label>
-          <input name="asking" type="number" step="0.01" value="{{ '%.2f'|format(item.asking) if item and item.asking_cents is not none else '' }}"/>
+          <input name="asking" type="number" step="0.01" value="{{ '%.2f'|format(item.asking) if item and item.asking is not none else '' }}"/>
         </div>
       </div>
 
