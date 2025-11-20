@@ -382,6 +382,7 @@ class Item(db.Model):
     cost_cents       = db.Column(db.Integer)
     price_cents      = db.Column(db.Integer)     # <-- matches importer
     sale_price_cents = db.Column(db.Integer)
+    asking_cents     = db.Column(db.Integer, nullable=True)
     status           = db.Column(db.String(20), nullable=False, default="available")  # "available" or "sold"
 
     # Dates / parties
@@ -407,6 +408,11 @@ class Item(db.Model):
     def cost(self):
         return (self.cost_cents or 0) / 100.0
 
+        @property
+    def asking(self):
+        # display in dollars in templates
+        return (self.asking_cents or 0) / 100.0
+    
     @property
     def sale_price(self):
         return (self.sale_price_cents or 0) / 100.0
@@ -841,20 +847,24 @@ def item_create():
             db.session.flush()  # get c.id without a separate commit
         consignor_id = c.id
     
-    asking_raw = request.form.get("asking") or "0"
-    asking = float(asking_raw)
+   asking_raw = request.form.get("asking") or "0"
+   asking_cents = int(round(float(asking_raw) * 100))
+
     item = Item(
         sku=sku,
         title=title,
-        category=category,
         ownership=ownership,
+        category=category,
+        asking_cents=asking_cents,
         cost_cents=cost_cents,
-        asking=asking,
         status="available",
-        notes=notes,
-        consignor=consignor_name,
         consignor_id=consignor_id,
     )
+
+# Only set asking if the user entered something
+if asking is not None:
+    item.asking = asking
+
     db.session.add(item)
     db.session.commit()
     flash(f"Item '{title}' created with SKU {sku}.")
