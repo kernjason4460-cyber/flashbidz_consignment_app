@@ -817,20 +817,33 @@ def item_create():
         except Exception:
             return None
 
+    # Basic fields
     title = (request.form.get("title") or "").strip()
-    category = (request.form.get("category") or "").strip() or None
+    category = (request.form.get("category") or "").strip()
     ownership = (request.form.get("ownership") or "owned").strip().lower()
+
+    # Money fields (stored as cents)
     cost_cents = to_cents(request.form.get("cost"))
     asking_cents = to_cents(request.form.get("asking"))
-    notes = (request.form.get("notes") or "").strip() or None
+
+    # Other optional fields
+    notes = (request.form.get("notes") or "").strip()
     consignor_name = (request.form.get("consignor") or "").strip() or None
     supplier_name = (request.form.get("supplier") or "").strip() or None
     sale_date_str = (request.form.get("sale_date") or "").strip() or None
 
+    # Parse sale_date if present
+    sale_date = None
+    if sale_date_str:
+        try:
+            sale_date = datetime.strptime(sale_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            sale_date = None
+
     # Use provided SKU if present, otherwise auto-generate
     sku = (request.form.get("sku") or "").strip()
     if not sku:
-        sku = next_sku()  # requires next_sku() to be defined below Item class
+        sku = next_sku()  # next_sku() must be defined below Item class
 
     # Resolve consignor_name -> consignor_id (optional)
     consignor_id = None
@@ -841,29 +854,26 @@ def item_create():
             db.session.add(c)
             db.session.flush()  # get c.id without a separate commit
         consignor_id = c.id
-    
-   asking_raw = request.form.get("asking") or "0"
-   asking_cents = int(round(float(asking_raw) * 100))
 
+    # Create the item
     item = Item(
         sku=sku,
         title=title,
         ownership=ownership,
         category=category,
-        asking_cents=asking_cents,
         cost_cents=cost_cents,
+        asking_cents=asking_cents,
         status="available",
         consignor_id=consignor_id,
+        notes=notes,
+        sale_date=sale_date,
     )
-
-# Only set asking if the user entered something
-if asking is not None:
-    item.asking = asking
 
     db.session.add(item)
     db.session.commit()
-    flash(f"Item '{title}' created with SKU {sku}.")
+    flash("Item created.", "success")
     return redirect(url_for("items_list"))
+
 from datetime import datetime
 
 def parse_date(s):
