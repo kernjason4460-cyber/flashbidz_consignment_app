@@ -430,7 +430,14 @@ class Item(db.Model):
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
+   
+    # Contract this item belongs to (optional)
+    contract_id = db.Column(
+        db.Integer,
+        db.ForeignKey("contracts.id"),
+        nullable=True,
+    )
+    contract = db.relationship("Contract", backref="items")
     # ----- Computed helpers (unchanged) -----
     @property
     def cost(self):
