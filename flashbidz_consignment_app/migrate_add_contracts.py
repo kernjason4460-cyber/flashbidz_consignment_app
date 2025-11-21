@@ -1,13 +1,13 @@
 import sqlite3
+import os
 
-DB_PATH = "flashbidz.db"
-
+# Point to the actual database inside the package folder
+DB_PATH = os.path.join("flashbidz_consignment_app", "flashbidz.db")
 
 def column_exists(cursor, table_name, column_name):
     cursor.execute(f"PRAGMA table_info({table_name})")
     cols = [row[1] for row in cursor.fetchall()]
     return column_name in cols
-
 
 def table_exists(cursor, table_name):
     cursor.execute(
@@ -16,16 +16,14 @@ def table_exists(cursor, table_name):
     )
     return cursor.fetchone() is not None
 
-
-def main():
+def run():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # 1) Create contracts table if it doesn't exist
+    # 1) Create contracts table if it doesn’t exist
     if not table_exists(cur, "contracts"):
         print("Creating contracts table...")
-        cur.execute(
-            """
+        cur.execute("""
             CREATE TABLE contracts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 consignor_id INTEGER NOT NULL,
@@ -36,8 +34,7 @@ def main():
                 signature_data TEXT,
                 notes TEXT
             )
-            """
-        )
+        """)
     else:
         print("contracts table already exists, skipping create.")
 
@@ -52,11 +49,5 @@ def main():
     conn.close()
     print("Migration complete.")
 
-
-def run():
-    """Helper so we can call this from within the Flask app context."""
-    main()
-
-
 if __name__ == "__main__":
-    main()
+    run()
