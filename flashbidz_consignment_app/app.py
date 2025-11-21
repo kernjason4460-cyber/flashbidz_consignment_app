@@ -115,7 +115,13 @@ def money_filter(cents):
 
 # ---- Paths & Database (ABSOLUTE path so we always hit the same DB) ----
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "flashbidz.db")
+import os  # at the top of file, if not already there
+
+# Use DATABASE_URL if present (Render/Postgres), otherwise fall back to local sqlite
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL",
+    "sqlite:///flashbidz.db",
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # ---- File uploads ----
