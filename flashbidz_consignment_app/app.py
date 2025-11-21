@@ -360,25 +360,24 @@ class Contract(db.Model):
     __tablename__ = "contracts"
 
     id = db.Column(db.Integer, primary_key=True)
-    consignor_id = db.Column(
-        db.Integer,
-        db.ForeignKey("consignors.id"),
-        nullable=False,
-    )
 
-    # matches the migration (stored as text in SQLite)
-    created_at = db.Column(db.String, nullable=False, default=lambda: datetime.utcnow().isoformat())
+    # Link to consignor
+    consignor_id = db.Column(db.Integer, db.ForeignKey("consignors.id"), nullable=False)
+
+    # Basic info
+    created_at = db.Column(db.String, nullable=False)  # stored as TEXT in SQLite
     status = db.Column(db.String(20), nullable=False, default="draft")
 
+    # Totals for quick reference
     total_items = db.Column(db.Integer)
     total_estimated_value_cents = db.Column(db.Integer)
 
-    signature_data = db.Column(db.Text)
+    # Signature + notes
+    signature_data = db.Column(db.Text)  # will later store base64 or similar
     notes = db.Column(db.Text)
 
+    # Relationships
     consignor = db.relationship("Consignor", backref="contracts")
-
-from datetime import datetime
 class Item(db.Model):
     __tablename__ = "items"
 
@@ -905,20 +904,21 @@ def item_create():
             db.session.add(contract)
             db.session.flush()  # get contract.id without separate commit
 
-    # Create the item and link to contract if we have one
-    item = Item(
-        sku=sku,
-        title=title,
-        ownership=ownership,
-        category=category,
-        cost_cents=cost_cents,
-        asking_cents=asking_cents,
-        status="available",
-        consignor_id=consignor_id,
-        notes=notes,
-        sale_date=sale_date,
-        contract_id=contract.id if contract else None,
-    )
+       # Create the item
+       item = Item(
+           sku=sku,
+           title=title,
+           ownership=ownership,
+           category=category,
+           cost_cents=cost_cents,
+           asking_cents=asking_cents,
+           status="available",
+           consignor=consignor_name,          # <— store the name for display
+           consignor_id=consignor_id,
+           notes=notes,
+           sale_date=sale_date,
+           contract_id=contract.id if contract else None,  # <— link to contract
+       )
 
     db.session.add(item)
     db.session.commit()
