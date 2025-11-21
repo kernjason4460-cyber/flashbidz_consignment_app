@@ -466,6 +466,12 @@ class Item(db.Model):
         else:
             cost = self.cost_cents or 0
             return sp - cost
+        @property
+        def asking(self):
+            """Return asking price in dollars from asking_cents."""
+            if self.asking_cents is None:
+                return None
+            return self.asking_cents / 100.0
 from datetime import datetime
 
 def next_sku():
