@@ -346,6 +346,34 @@ class Consignor(db.Model):
     advance_balance = db.Column(db.Integer, default=0)       # store cents; negative or positive
     license_image = db.Column(db.String(255))  # path to driver's license image
 
+class Contract(db.Model):
+    __tablename__ = "contracts"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Who this contract belongs to
+    consignor_id = db.Column(
+        db.Integer,
+        db.ForeignKey("consignors.id"),
+        nullable=False,
+    )
+
+    # Basic contract info
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    status = db.Column(db.String(20), default="draft", nullable=False)  # draft/signed/etc.
+
+    # Summary numbers (optional, we can fill later)
+    total_items = db.Column(db.Integer, nullable=True)
+    total_estimated_value_cents = db.Column(db.Integer, nullable=True)
+
+    # Signature image as text (we’ll feed it base64 from a signature pad later)
+    signature_data = db.Column(db.Text, nullable=True)
+
+    # Internal notes / comments
+    notes = db.Column(db.Text, nullable=True)
+
+    # Relationship back to Consignor
+    consignor = db.relationship("Consignor", backref="contracts")
 
 class Supplier(db.Model):
     __tablename__ = "suppliers"
