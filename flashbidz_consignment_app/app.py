@@ -840,7 +840,6 @@ def money(cents):
     except Exception:
         return ""
 
-
 @app.post("/items/new")
 @require_perm("items:add")
 def item_create():
@@ -868,12 +867,7 @@ def item_create():
     sale_date_str = (request.form.get("sale_date") or "").strip() or None
 
     # Parse sale_date if present
-    sale_date = None
-    if sale_date_str:
-        try:
-            sale_date = datetime.strptime(sale_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            sale_date = None
+    sale_date = parse_date(sale_date_str)
 
     # Use provided SKU if present, otherwise auto-generate
     sku = (request.form.get("sku") or "").strip()
@@ -890,7 +884,28 @@ def item_create():
             db.session.flush()  # get c.id without a separate commit
         consignor_id = c.id
 
-    # Create the item
+    # ---- Auto-create / reuse consignment contract for this consignor ----
+    contract = None
+    if consignor_id:
+        # Try to reuse the latest draft contract for this consignor
+        contract = (
+            Contract.query
+            .filter_by(consignor_id=consignor_id, status="draft")
+            .order_by(Contract.id.desc())
+            .first()
+        )
+
+        if not contract:
+            # No open contract – start a new one
+            contract = Contract(
+                consignor_id=consignor_id,
+                created_at=datetime.utcnow().isoformat(timespec="seconds"),
+                status="draft",
+            )
+            db.session.add(contract)
+            db.session.flush()  # get contract.id without separate commit
+
+    # Create the item and link to contract if we have one
     item = Item(
         sku=sku,
         title=title,
@@ -902,6 +917,7 @@ def item_create():
         consignor_id=consignor_id,
         notes=notes,
         sale_date=sale_date,
+        contract_id=contract.id if contract else None,
     )
 
     db.session.add(item)
@@ -909,7 +925,7 @@ def item_create():
     flash("Item created.", "success")
     return redirect(url_for("items_list"))
 
-from datetime import datetime
+
 
 def parse_date(s):
     if not s: return None
