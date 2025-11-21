@@ -860,10 +860,10 @@ def item_create():
     asking_cents = to_cents(request.form.get("asking"))
 
     # Other optional fields
-    notes = (request.form.get("notes") or "").strip()
+    notes          = (request.form.get("notes") or "").strip()
     consignor_name = (request.form.get("consignor") or "").strip() or None
-    supplier_name = (request.form.get("supplier") or "").strip() or None
-    sale_date_str = (request.form.get("sale_date") or "").strip() or None
+    supplier_name  = (request.form.get("supplier") or "").strip() or None
+    sale_date_str  = (request.form.get("sale_date") or "").strip() or None
 
     # Parse sale_date if present
     sale_date = parse_date(sale_date_str)
@@ -894,7 +894,7 @@ def item_create():
         supplier_id = s.id
 
     # ---- Auto-create / reuse consignment contract for this consignor ----
-    contract_id = None
+    contract = None
     if consignor_id:
         # Try to reuse the latest draft contract for this consignor
         contract = (
@@ -914,9 +914,7 @@ def item_create():
             db.session.add(contract)
             db.session.flush()  # get contract.id without separate commit
 
-        contract_id = contract.id
-
-    # Create the item
+    # Create the item (now linked to consignor + contract)
     item = Item(
         sku=sku,
         title=title,
@@ -925,13 +923,13 @@ def item_create():
         cost_cents=cost_cents,
         asking_cents=asking_cents,
         status="available",
+        consignor=consignor_name,              # show name in table
+        consignor_id=consignor_id,
+        supplier=supplier_name,
+        supplier_id=supplier_id,
         notes=notes,
         sale_date=sale_date,
-        consignor_id=consignor_id,
-        consignor=consignor_name,   # show name in Items table
-        supplier_id=supplier_id,
-        supplier=supplier_name,
-        contract_id=contract_id,
+        contract_id=contract.id if contract else None,
     )
 
     db.session.add(item)
