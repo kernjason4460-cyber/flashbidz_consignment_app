@@ -93,6 +93,7 @@
           <th>Sale Price</th>
           <th>Sale Date</th>
           <th>Consignor</th>
+          <th>Contract</th>
           <th>Buyer</th>
           <th></th>
         </tr>
@@ -121,8 +122,17 @@
           {% endif %}
         </td>
         <td>{{ it.sale_date or '' }}</td>
-        <td>{{ it.consignor or '' }}</td>
-        <td>{{ it.buyer or '' }}</td>
+       <td>{{ item.consignor or "" }}</td>
+       <td>
+         {% if item.contract %}
+           #{{ item.contract.id }} ({{ item.contract.status }})
+         {% elif item.contract_id %}
+           #{{ item.contract_id }}
+         {% else %}
+           —
+         {% endif %}
+       </td>
+       <td>{{ item.buyer_name or "" }}</td>
         <td class="row-actions">
           {# small barcode preview #}
           {% if it.sku %}
