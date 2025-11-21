@@ -1,4 +1,5 @@
-from app import app, db, User
+from flashbidz_consignment_app.app import app, db, User
+
 
 with app.app_context():
     username = input("Enter username: ").strip()
