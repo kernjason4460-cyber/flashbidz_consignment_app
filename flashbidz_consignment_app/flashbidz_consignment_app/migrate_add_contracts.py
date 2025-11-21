@@ -25,8 +25,4 @@ def run():
             ALTER TABLE items ADD COLUMN contract_id INTEGER REFERENCES contracts(id);
         """)
 
-if __name__ == "__main__":
-    from flashbidz_consignment_app.app import app
-    with app.app_context():
-        run()
-        print("Migration complete: contracts + contract_id added.")
+    print("Migration complete: contracts + contract_id added.")
