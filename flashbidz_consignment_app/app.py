@@ -883,8 +883,18 @@ def item_create():
             db.session.flush()  # get c.id without a separate commit
         consignor_id = c.id
 
+    # Resolve supplier_name -> supplier_id (optional)
+    supplier_id = None
+    if supplier_name:
+        s = Supplier.query.filter(Supplier.name.ilike(supplier_name)).first()
+        if not s:
+            s = Supplier(name=supplier_name)
+            db.session.add(s)
+            db.session.flush()
+        supplier_id = s.id
+
     # ---- Auto-create / reuse consignment contract for this consignor ----
-    contract = None
+    contract_id = None
     if consignor_id:
         # Try to reuse the latest draft contract for this consignor
         contract = (
@@ -904,29 +914,30 @@ def item_create():
             db.session.add(contract)
             db.session.flush()  # get contract.id without separate commit
 
-       # Create the item
-       item = Item(
-           sku=sku,
-           title=title,
-           ownership=ownership,
-           category=category,
-           cost_cents=cost_cents,
-           asking_cents=asking_cents,
-           status="available",
-           consignor=consignor_name,          # <— store the name for display
-           consignor_id=consignor_id,
-           notes=notes,
-           sale_date=sale_date,
-           contract_id=contract.id if contract else None,  # <— link to contract
-       )
+        contract_id = contract.id
+
+    # Create the item
+    item = Item(
+        sku=sku,
+        title=title,
+        ownership=ownership,
+        category=category,
+        cost_cents=cost_cents,
+        asking_cents=asking_cents,
+        status="available",
+        notes=notes,
+        sale_date=sale_date,
+        consignor_id=consignor_id,
+        consignor=consignor_name,   # show name in Items table
+        supplier_id=supplier_id,
+        supplier=supplier_name,
+        contract_id=contract_id,
+    )
 
     db.session.add(item)
     db.session.commit()
     flash("Item created.", "success")
     return redirect(url_for("items_list"))
-
-
-
 def parse_date(s):
     if not s: return None
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"):
