@@ -21,7 +21,7 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
 
-    # 1) Create contracts table if it doesn’t exist
+    # 1) Create contracts table if it doesn't exist
     if not table_exists(cur, "contracts"):
         print("Creating contracts table...")
         cur.execute(
@@ -51,6 +51,11 @@ def main():
     conn.commit()
     conn.close()
     print("Migration complete.")
+
+
+def run():
+    """Helper so we can call this from within the Flask app context."""
+    main()
 
 
 if __name__ == "__main__":
