@@ -106,7 +106,14 @@
         <td>{{ it.ownership }}</td>
         <td>{{ it.category or '' }}</td>
         <td>${{ '%.2f'|format(it.cost) }}</td>
-        <td>${{ '%.2f'|format(it.asking) }}</td>
+        <td>
+            {% if it.asking_cents %}
+                ${{ '%.2f' | format(it.asking_cents / 100) }}
+            {% else %}
+                —
+            {% endif %}
+        </td>
+
         <td>{{ it.status }}</td>
         <td>
           {% if it.sale_price_cents %}
