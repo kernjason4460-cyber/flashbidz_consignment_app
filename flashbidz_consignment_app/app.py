@@ -385,6 +385,29 @@ class Supplier(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class Contract(db.Model):
+    __tablename__ = "contracts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    consignor_id = db.Column(
+        db.Integer,
+        db.ForeignKey("consignors.id"),
+        nullable=False,
+    )
+
+    # matches the migration (stored as text in SQLite)
+    created_at = db.Column(db.String, nullable=False, default=lambda: datetime.utcnow().isoformat())
+    status = db.Column(db.String(20), nullable=False, default="draft")
+
+    total_items = db.Column(db.Integer)
+    total_estimated_value_cents = db.Column(db.Integer)
+
+    signature_data = db.Column(db.Text)
+    notes = db.Column(db.Text)
+
+    consignor = db.relationship("Consignor", backref="contracts")
+
+from datetime import datetime
 class Item(db.Model):
     __tablename__ = "items"
 
