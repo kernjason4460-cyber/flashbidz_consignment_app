@@ -178,6 +178,11 @@ app.config.setdefault("MAIL_USE_TLS", True)
 # ---- Business defaults ----
 app.config.setdefault("CONSIGNOR_RATE", 0.65)
 
+# Make the DB engine more robust against dropped/SSL connections
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,   # check connections before using them
+    "pool_recycle": 280,     # recycle connections every ~5 minutes
+}
 # ---- DB handle ----
 db = SQLAlchemy(app)
 
