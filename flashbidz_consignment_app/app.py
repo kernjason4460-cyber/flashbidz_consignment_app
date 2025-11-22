@@ -120,7 +120,6 @@ import os  # at the top of file, if not already there
 # Use DATABASE_URL if present (Render/Postgres), otherwise fall back to local sqlite
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL",
-    "sqlite:///flashbidz.db",
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -1035,33 +1034,7 @@ def item_sell(item_id):
     flash("Sale recorded")
     return redirect(url_for("items_list"))
 
-def ensure_consignor_columns():
-    import sqlite3
-
     db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
-    if not db_uri or not db_uri.startswith("sqlite:///"):
-        return  # Only handle SQLite
-
-    db_path = db_uri.replace("sqlite:///", "")
-
-    conn = sqlite3.connect(db_path)
-    cur = conn.cursor()
-
-    cur.execute("PRAGMA table_info(consignors)")
-    cols = {row[1] for row in cur.fetchall()}
-
-    migrations = [
-        ("commission_pct", "REAL DEFAULT 0"),
-        ("advance_balance", "REAL DEFAULT 0"),
-        ("license_image", "TEXT"),
-    ]
-
-    for name, col_def in migrations:
-        if name not in cols:
-            cur.execute(f"ALTER TABLE consignors ADD COLUMN {name} {col_def}")
-
-    conn.commit()
-    conn.close()
 
 with app.app_context():
     try:
@@ -1906,13 +1879,10 @@ def export_consignors_csv():
     resp.headers["Content-Disposition"] = "attachment; filename=consignors_export.csv"
     return resp
 
-@app.get("/admin/backup/db")
+app.get("/admin/backup/db")
 def backup_db():
     from flask import send_file
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "flashbidz.db")
-    if not os.path.exists(db_path):
-        return "DB file not found", 404
-    return send_file(db_path, as_attachment=True, download_name="flashbidz_backup.db")
+    
 # ---------- USERS (Admin) ----------
 @app.get("/users")
 def users_list():
