@@ -2293,8 +2293,10 @@ def add_no_cache_headers(response):
     response.headers["Expires"] = "0"
     return response
 
-if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    app.run(host="0.0.0.0", port=5001, debug=False)
+# ✅ ALWAYS run on import (local + Render)
+with app.app_context():
+    db.create_all()
 
+if __name__ == "__main__":
+    # Local dev server
+    app.run(host="0.0.0.0", port=5001, debug=False)
