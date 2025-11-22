@@ -1,78 +1,64 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Manage Users</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    body{font-family:system-ui;margin:0;background:#f6f7f9}
-    main{max-width:900px;margin:0 auto;padding:24px}
-    table{width:100%;border-collapse:collapse;background:#fff}
-    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
-    form.inline{display:inline}
-    .card{background:#fff;padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);margin-bottom:16px}
-    input,select{padding:8px;border:1px solid #ddd;border-radius:8px}
-    .btn{padding:9px 12px;border-radius:8px;border:none;background:#e60000;color:#fff;font-weight:700;cursor:pointer}
-    .btn-light{padding:9px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer}
-  </style>
-</head>
-<body>
-  {% include "_navbar.html" %}
-  <main>
-    <h1>Manage Users</h1>
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
 
-    <div class="card">
-      <h2>Add Employee</h2>
-      <form method="post" action="/users/new">
-        <label>Username</label>
-        <input name="username" required>
-        <label>Password</label>
-        <input name="password" type="password" required>
-        <label>Role</label>
+{% block content %}
+<h1>Manage Users</h1>
+
+<p>Logged in as: {{ session.username or "?" }} ({{ session.role or "" }})</p>
+
+<h2>Create New User</h2>
+<form method="post" action="{{ url_for('users_new') }}">
+  <div>
+    <label>Username</label>
+    <input type="text" name="username" required>
+  </div>
+  <div>
+    <label>Password</label>
+    <input type="password" name="password" required>
+  </div>
+  <div>
+    <label>Role</label>
+    <select name="role">
+      <option value="staff">Staff</option>
+      <option value="admin">Admin</option>
+    </select>
+  </div>
+  <button type="submit">Create User</button>
+</form>
+
+<hr>
+
+<h2>Existing Users</h2>
+<table border="1" cellpadding="4">
+  <tr>
+    <th>ID</th>
+    <th>Username</th>
+    <th>Role</th>
+    <th>Created</th>
+    <th>Actions</th>
+  </tr>
+  {% for u in users %}
+  <tr>
+    <td>{{ u.id }}</td>
+    <td>{{ u.username }}</td>
+    <td>{{ u.role }}</td>
+    <td>{{ u.created_at }}</td>
+    <td>
+      <form method="post" action="{{ url_for('users_set_role', uid=u.id) }}" style="display:inline;">
         <select name="role">
-          <option value="staff">Staff</option>
-          <option value="admin">Admin</option>
+          <option value="staff" {% if u.role == 'staff' %}selected{% endif %}>Staff</option>
+          <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
         </select>
-        <div style="margin-top:10px">
-          <button class="btn" type="submit">Add</button>
-        </div>
+        <button type="submit">Update Role</button>
       </form>
-    </div>
 
-    <div class="card">
-      <h2>Existing Users</h2>
-      <table>
-        <thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
-        <tbody>
-          {% for u in users %}
-          <tr>
-            <td>{{ u.username }}</td>
-            <td>
-              <form class="inline" method="post" action="/users/{{u.id}}/role">
-                <select name="role">
-                  <option value="staff" {% if u.role=='staff' %}selected{% endif %}>staff</option>
-                  <option value="admin" {% if u.role=='admin' %}selected{% endif %}>admin</option>
-                </select>
-                <button class="btn-light" type="submit">Change</button>
-              </form>
-            </td>
-            <td>
-              {% if u.username != 'admin' %}
-              <form class="inline" method="post" action="/users/{{u.id}}/delete" onsubmit="return confirm('Delete {{u.username}}?')">
-                <button class="btn-light" type="submit">Delete</button>
-              </form>
-              {% else %}
-                <em>primary admin</em>
-              {% endif %}
-            </td>
-          </tr>
-          {% else %}
-          <tr><td colspan="3" style="color:#777">No users yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </main>
-</body>
-</html>
-
+      {% if u.username != 'admin' %}
+      <form method="post" action="{{ url_for('users_delete', uid=u.id) }}" style="display:inline;" onsubmit="return confirm('Delete this user?');">
+        <button type="submit">Delete</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
