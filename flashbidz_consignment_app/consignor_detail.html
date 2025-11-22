@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-
+{% if consignor.contracts %}
+  <p>
+    Latest contract:
+    {% set latest = consignor.contracts|sort(attribute='id')|last %}
+    <a href="{{ url_for('contract_view', contract_id=latest.id) }}">
+      Contract #{{ latest.id }} ({{ latest.status|capitalize }})
+    </a>
+  </p>
+{% endif %}
 <p style="margin-top: 8px;">
   <a class="btn" href="{{ url_for('items_list', consignor_id=consignor.id) }}">
     View all items for this consignor
