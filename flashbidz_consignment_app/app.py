@@ -227,124 +227,72 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="staff")
+    # comma-separated list of explicit permissions (e.g. "items:view,items:add")
     permissions = db.Column(db.String(255), nullable=False, default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def perm_set(self):
-        return {
-            p.strip()
-            for p in (self.permissions or "").split(",")
-            if p.strip()
-        }
-
-    def has_perm(self, perm):
-        r = (self.role or "").lower()
-
-        # Admin can do anything
-        if r == "admin":
-            return True
-
-        # If explicit permissions set, use them
-        perms = self.perm_set()
-        if perms:
-            return perm in perms
-
-        # Fallback to old role-based defaults
-        staff_perms = {
-            "items:view", "items:add", "items:edit",
-            "reports:view", "data:import", "data:export"
-        }
-        viewer_perms = {"items:view"}
-
-        if r == "staff":
-            return perm in staff_perms
-        if r == "viewer":
-            return perm in viewer_perms
-
-        return False
-
-
-# ↓ Paste require_perm HERE (after User is defined)
-def require_perm(perm_name):
-    def decorator(fn):
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            uid = session.get("user_id")
-            if not uid:
-                nxt = request.full_path if request.query_string else request.path
-                return redirect(url_for("login", next=nxt))
-
-            u = db.session.get(User, int(uid))
-            if not u:
-                flash("Please log in again.")
-                return redirect(url_for("login"))
-
-            if (u.role or "").lower() == "admin":
-                return fn(*args, **kwargs)
-
-            if not u.has_perm(perm_name):
-                flash("You don't have permission to do that.")
-                return redirect(url_for("home"))
-
-            return fn(*args, **kwargs)
-        return wrapper
-    return decorator
-
-    # NEW: comma-separated permissions string, e.g. "items:view,items:add,reports:view"
-    permissions = db.Column(db.String(255), nullable=False, default="")
-
+    # ---------- Password helpers ----------
     def set_password(self, raw: str):
         from werkzeug.security import generate_password_hash
         try:
             self.password_hash = generate_password_hash(raw, method="scrypt")
         except Exception:
+            # fallback for environments without scrypt
             self.password_hash = generate_password_hash(raw, method="pbkdf2:sha256")
 
     def check_password(self, raw: str) -> bool:
         from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, raw)
 
-    # ---- Permission helpers ----
-    def has_perm(self, perm):
-    # Admins can do everything
-    role = (self.role or "").lower()
-    if role == "admin":
-        return True
+    # ---------- Permission helpers ----------
+    def perm_set(self):
+        """Return a set of permission strings from the comma-separated field."""
+        return {
+            p.strip()
+            for p in (self.permissions or "").split(",")
+            if p.strip()
+        }
 
-    # If explicit permissions are set, use ONLY those
-    explicit = self._perm_set()
-    if explicit:
-        return perm in explicit
+    def has_perm(self, perm: str) -> bool:
+        """
+        Check if user has a given permission.
 
-    # Otherwise, fall back to role-based defaults
-    staff_perms  = {"items:view", "items:add", "items:edit", "reports:view", "data:import", "data:export"}
-    viewer_perms = {"items:view"}
+        * Admins can do everything.
+        * If `permissions` is non-empty, ONLY those are used.
+        * If `permissions` is empty, fall back to role-based defaults.
+        """
+        role = (self.role or "").lower()
 
-    if role == "staff":
-        return perm in staff_perms
-    if role == "viewer":
-        return perm in viewer_perms
-    return False
+        # Admin can do anything
+        if role == "admin":
+            return True
 
-    def grant_perm(self, perm: str):
-        s = self._perm_set()
-        s.add(perm)
-        self.permissions = ",".join(sorted(s))
-    @app.context_processor
-    def inject_helpers():
-        return dict()
+        # If explicit permissions are set, use only those
+        perms = self.perm_set()
+        if perms:
+            return perm in perms
 
-    def revoke_perm(self, perm: str):
-        s = self._perm_set()
-        if perm in s:
-            s.remove(perm)
-        self.permissions = ",".join(sorted(s))
+        # Role defaults when no explicit permissions are configured
+        staff_perms = {
+            "items:view", "items:add", "items:edit",
+            "reports:view",
+            "data:import", "data:export",
+            "consignors:edit",
+            "suppliers:view", "suppliers:edit",
+            "sales:edit",
+            "payouts:view", "payouts:edit",
+        }
+        viewer_perms = {
+            "items:view",
+            "reports:view",
+        }
+
+        if role == "staff":
+            return perm in staff_perms
+        if role == "viewer":
+            return perm in viewer_perms
+
+        return False
 class Consignor(db.Model):
     __tablename__ = "consignors"
     id         = db.Column(db.Integer, primary_key=True)
