@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Consignment Contract #{{ contract.id }}</h1>
+<p>
+  Consignor: <strong>{{ consignor.name }}</strong><br>
+  Status: <strong>{{ contract.status|capitalize }}</strong><br>
+  Created: {{ contract.created_at }}
+</p>
+
+{% if session.get('role') == 'admin' %}
+  {% if contract.status == 'draft' %}
+    <form method="post" action="{{ url_for('contract_lock', contract_id=contract.id) }}" style="margin-bottom:1em">
+      <button class="btn btn-danger">Lock Contract</button>
+    </form>
+  {% elif contract.status == 'locked' %}
+    <form method="post" action="{{ url_for('contract_unlock', contract_id=contract.id) }}" style="margin-bottom:1em">
+      <button class="btn btn-secondary">Unlock (Admin only)</button>
+    </form>
+  {% endif %}
+{% endif %}
+
+<h2>Items on this contract ({{ total_items }})</h2>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>SKU</th>
+      <th>Title</th>
+      <th>Ownership</th>
+      <th>Asking</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for it in items %}
+    <tr>
+      <td>{{ it.sku }}</td>
+      <td>{{ it.title }}</td>
+      <td>{{ it.ownership }}</td>
+      <td>{{ it.asking_cents|money }}</td>
+      <td>{{ it.status }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
