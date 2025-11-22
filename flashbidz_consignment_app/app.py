@@ -1036,13 +1036,6 @@ def item_sell(item_id):
 
     db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
 
-with app.app_context():
-    try:
-        ensure_consignor_columns()
-    except Exception as e:
-        app.logger.warning(f"ensure_consignor_columns skipped: {e}")
-
-
 # Create tables if they don't exist
 with app.app_context():
     db.create_all()
