@@ -28,6 +28,7 @@ import urllib.request
 import time
 import re
 
+# ---- Permission decorator (only admins or explicit perms) ----
 def require_perm(perm_name):
     def decorator(fn):
         @wraps(fn)
@@ -37,17 +38,50 @@ def require_perm(perm_name):
                 nxt = request.full_path if request.query_string else request.path
                 return redirect(url_for("login", next=nxt))
 
-            # IMPORTANT: use the existing db.session and model classes
-            u = db.session.get(User, int(uid))  # SQLAlchemy 2.0 style
+            # Load user
+            u = db.session.get(User, int(uid))
             if not u:
                 flash("Please log in again.")
                 return redirect(url_for("login"))
 
-            # Admins bypass checks
-            if (u.role or "").lower() == "admin":
+            role = (u.role or "").lower()
+
+            # 1) Admins can do everything
+            if role == "admin":
                 return fn(*args, **kwargs)
 
-            if not u.has_perm(perm_name):
+            # 2) Explicit permission list on the user (comma-separated)
+            perms = {
+                p.strip()
+                for p in (u.permissions or "").split(",")
+                if p.strip()
+            }
+
+            if perms:
+                # If a user has an explicit permission list,
+                # ONLY those are allowed.
+                if perm_name not in perms:
+                    flash("You don't have permission to do that.")
+                    return redirect(url_for("home"))
+                return fn(*args, **kwargs)
+
+            # 3) Default permissions by role when permissions field is empty
+            default_perms_by_role = {
+                "staff": {
+                    "items:view", "items:add", "items:edit",
+                    "photos:upload",
+                    "suppliers:view", "suppliers:edit",
+                    "sales:edit",
+                    "consignors:view", "consignors:edit",
+                    # NOTE: NO "reports:view" here on purpose
+                },
+                "viewer": {
+                    "items:view",
+                },
+            }
+
+            allowed = perm_name in default_perms_by_role.get(role, set())
+            if not allowed:
                 flash("You don't have permission to do that.")
                 return redirect(url_for("home"))
 
