@@ -225,7 +225,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="staff")
-    # comma-separated list of explicit permissions (e.g. "items:view,items:add")
+    # comma-separated list of explicit permissions
     permissions = db.Column(db.String(255), nullable=False, default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -235,14 +235,13 @@ class User(db.Model):
         try:
             self.password_hash = generate_password_hash(raw, method="scrypt")
         except Exception:
-            # fallback for environments without scrypt
             self.password_hash = generate_password_hash(raw, method="pbkdf2:sha256")
 
     def check_password(self, raw: str) -> bool:
         from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, raw)
 
-       # ---------- Permission helpers ----------
+    # ---------- Permission helpers ----------
     def perm_set(self):
         """Return a set of permission strings from the comma-separated field."""
         return {
@@ -257,7 +256,7 @@ class User(db.Model):
 
         * Admins can do everything.
         * If `permissions` is non-empty, ONLY those are used.
-        * If `permissions` is empty, fall back to very conservative role defaults.
+        * If `permissions` is empty, fall back to safe role defaults.
         """
         role = (self.role or "").lower()
 
@@ -270,13 +269,14 @@ class User(db.Model):
         if perms:
             return perm in perms
 
-        # ---- SAFE DEFAULTS (no reports by default) ----
+        # ---- SAFE DEFAULTS (no reports / statements by default) ----
         staff_perms = {
             "items:view", "items:add", "items:edit",
             "photos:upload",
             "suppliers:view", "suppliers:edit",
             "sales:edit",
-            # deliberately NO "reports:view" or "payouts:view"
+            "consignors:view", "consignors:edit",
+            # intentionally **no** "reports:view" or "payouts:view" here
         }
         viewer_perms = {
             "items:view",
