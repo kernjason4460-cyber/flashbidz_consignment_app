@@ -1865,59 +1865,51 @@ def users_list():
 
 @app.post("/users/new")
 def users_new():
-    # Guard
-    maybe_resp = _require_admin()
-    if maybe_resp:
-        return maybe_resp
+    if session.get("role") != "admin":
+        return "Forbidden", 403
 
-    username = (request.form.get("username") or "").strip()
-    password = (request.form.get("password") or "").strip()
-    role     = (request.form.get("role") or "staff").strip().lower()
+    username    = (request.form.get("username") or "").strip()
+    password    = (request.form.get("password") or "").strip()
+    role        = (request.form.get("role") or "staff").strip()
+    permissions = (request.form.get("permissions") or "").strip()
 
     if not username or not password:
-        flash("Username and password are required.")
+        flash("Username and password are required")
         return redirect(url_for("users_list"))
 
+    # allow admin / staff / viewer
     if role not in ("admin", "staff", "viewer"):
         role = "staff"
 
-    # Must be unique
     if User.query.filter_by(username=username).first():
-        flash("That username is already taken.")
+        flash("That username is taken")
         return redirect(url_for("users_list"))
 
-    u = User(username=username, role=role)
+    u = User(username=username, role=role, permissions=permissions)
     u.set_password(password)
-    # start with no explicit permissions; you can edit later
-    u.permissions = ""
-
     db.session.add(u)
     db.session.commit()
-
-    flash(f"User '{username}' created.")
+    flash(f"User '{username}' created")
     return redirect(url_for("users_list"))
 
 
 @app.post("/users/<int:uid>/role")
 def users_set_role(uid):
-    # Guard
-    maybe_resp = _require_admin()
-    if maybe_resp:
-        return maybe_resp
+    if session.get("role") != "admin":
+        return "Forbidden", 403
 
-    u = User.query.get_or_404(uid)
+    role        = (request.form.get("role") or "staff").strip()
+    permissions = (request.form.get("permissions") or "").strip()
 
-    role = (request.form.get("role") or "staff").strip().lower()
     if role not in ("admin", "staff", "viewer"):
         role = "staff"
 
-    permissions = (request.form.get("permissions") or "").strip()
-
+    u = User.query.get_or_404(uid)
     u.role = role
-    u.permissions = permissions
-    db.session.commit()
+    u.permissions = permissions  # <-- save the comma-separated perms
 
-    flash(f"Updated {u.username}: role → {role}, permissions → {permissions or '(none)'}")
+    db.session.commit()
+    flash(f"Role/permissions updated for {u.username}")
     return redirect(url_for("users_list"))
 
 
