@@ -4,61 +4,88 @@
 {% block content %}
 <h1>Manage Users</h1>
 
-<p>Logged in as: {{ session.username or "?" }} ({{ session.role or "" }})</p>
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class="flash-messages">
+      {% for m in messages %}
+        <li>{{ m }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
 
 <h2>Create New User</h2>
 <form method="post" action="{{ url_for('users_new') }}">
-  <div>
-    <label>Username</label>
+  <label>
+    Username
     <input type="text" name="username" required>
-  </div>
-  <div>
-    <label>Password</label>
+  </label>
+
+  <label>
+    Password
     <input type="password" name="password" required>
-  </div>
-  <div>
-    <label>Role</label>
+  </label>
+
+  <label>
+    Role
     <select name="role">
       <option value="staff">Staff</option>
+      <option value="viewer">Viewer</option>
       <option value="admin">Admin</option>
     </select>
-  </div>
+  </label>
+
   <button type="submit">Create User</button>
 </form>
 
 <hr>
 
 <h2>Existing Users</h2>
-<table border="1" cellpadding="4">
-  <tr>
-    <th>ID</th>
-    <th>Username</th>
-    <th>Role</th>
-    <th>Created</th>
-    <th>Actions</th>
-  </tr>
-  {% for u in users %}
-  <tr>
-    <td>{{ u.id }}</td>
-    <td>{{ u.username }}</td>
-    <td>{{ u.role }}</td>
-    <td>{{ u.created_at }}</td>
-    <td>
-      <form method="post" action="{{ url_for('users_set_role', uid=u.id) }}" style="display:inline;">
-        <select name="role">
-          <option value="staff" {% if u.role == 'staff' %}selected{% endif %}>Staff</option>
-          <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
-        </select>
-        <button type="submit">Update Role</button>
-      </form>
+<table border="1" cellpadding="6" cellspacing="0">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Username</th>
+      <th>Role</th>
+      <th>Permissions<br><small>(comma-separated)</small></th>
+      <th>Created</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.username }}</td>
+        <td>
+          <form method="post" action="{{ url_for('users_set_role', uid=u.id) }}">
+            <select name="role">
+              <option value="staff"  {% if (u.role or '').lower() == 'staff' %}selected{% endif %}>Staff</option>
+              <option value="viewer" {% if (u.role or '').lower() == 'viewer' %}selected{% endif %}>Viewer</option>
+              <option value="admin"  {% if (u.role or '').lower() == 'admin' %}selected{% endif %}>Admin</option>
+            </select>
+        </td>
+        <td>
+            <input type="text" name="permissions"
+                   value="{{ u.permissions or '' }}"
+                   placeholder="items:view,items:add">
+        </td>
+        <td>{{ u.created_at }}</td>
+        <td>
+            <button type="submit">Save</button>
+          </form>
 
-      {% if u.username != 'admin' %}
-      <form method="post" action="{{ url_for('users_delete', uid=u.id) }}" style="display:inline;" onsubmit="return confirm('Delete this user?');">
-        <button type="submit">Delete</button>
-      </form>
-      {% endif %}
-    </td>
-  </tr>
-  {% endfor %}
+          {% if u.username != 'admin' %}
+          <form method="post" action="{{ url_for('users_delete', uid=u.id) }}"
+                style="display:inline"
+                onsubmit="return confirm('Delete user {{ u.username }}?');">
+            <button type="submit">Delete</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
 </table>
+
 {% endblock %}
