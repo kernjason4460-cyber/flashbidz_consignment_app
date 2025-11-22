@@ -1901,13 +1901,19 @@ def users_new():
 def users_set_role(uid):
     if session.get("role") != "admin":
         return "Forbidden", 403
-    role = (request.form.get("role") or "staff").strip()
-    if role not in ("admin", "staff"):
+
+    role = (request.form.get("role") or "staff").strip().lower()
+    if role not in ("admin", "staff", "viewer"):
         role = "staff"
+
+    perms = (request.form.get("permissions") or "").strip()
+
     u = User.query.get_or_404(uid)
     u.role = role
+    u.permissions = perms  # this is your comma-separated permissions string
     db.session.commit()
-    flash(f"Role updated for {u.username} → {role}")
+
+    flash(f"Role/permissions updated for {u.username}")
     return redirect(url_for("users_list"))
 
 @app.post("/users/<int:uid>/delete")
