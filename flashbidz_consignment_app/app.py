@@ -193,25 +193,23 @@ db = SQLAlchemy(app)
 
 @app.before_request
 def _require_login_globally():
-    # Allow static files (CSS/JS/images)
+    # 1) Always allow static files (CSS, JS, images)
     if request.path.startswith("/static/"):
         return
-    # Sometimes there's no endpoint (404 etc.)
-    if request.endpoint is None:
+
+    # 2) Allow the login page itself without being logged in
+    if request.endpoint in ("login", "login_post"):
         return
-    # Allow GET /login and POST /login
-    allowed = {"login", "login_post", "static",
-           "consignors_list", "admin_view", "statements_index"}
-    # If logged in, allow anything
-    if session.get("user_id"):
-        return
-    # Otherwise force login, preserving destination
-    if request.endpoint not in allowed:
+
+    # 3) If not logged in, force login (keep where they were trying to go)
+    if not session.get("user_id"):
         nxt = request.full_path if request.query_string else request.path
         return redirect(url_for("login", next=nxt))
-    # role-based restriction: only admins can access /admin* and /users*
+
+    # 4) From here on, we know the user IS logged in.
+    #    Lock down /admin* and /users* so only real admins can see them.
     if request.path.startswith("/admin") or request.path.startswith("/users"):
-        if session.get("role") != "admin":
+        if (session.get("role") or "").lower() != "admin":
             flash("Admin access required")
             return redirect(url_for("home"))
 
