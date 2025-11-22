@@ -1037,10 +1037,6 @@ def item_sell(item_id):
     db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
 
 # Create tables if they don't exist
-with app.app_context():
-    db.create_all()
-
-
 
 @app.get("/upload")
 def upload_form():
