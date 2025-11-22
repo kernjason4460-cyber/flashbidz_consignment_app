@@ -1088,8 +1088,8 @@ def item_photos(item_id):
     photos = item.photos.order_by(Photo.uploaded_at.desc()).all()
     return render_template("photos.html", item=item, photos=photos)
 
-@require_perm("reports:view")
 @app.get("/reports")
+@require_perm("reports:view")
 def reports():
     ...
     # Optional date filters for SOLD items
@@ -1204,8 +1204,8 @@ def parse_date(s):
     except:
         return None
 
-@require_perm("reports:view")
 @app.get("/statements")
+@require_perm("reports:view")
 def statements_index():
     ...
     dfrom = parse_date(request.args.get("from", ""))
@@ -1248,8 +1248,8 @@ def parse_date(s):
     except:
         return None
 
-@require_perm("reports:view")
 @app.get("/consignors/<int:cid>/statement.csv")
+@require_perm("reports:view")
 def consignor_statement_csv(cid):
     ...
     c = Consignor.query.get_or_404(cid)
@@ -1307,8 +1307,9 @@ def payouts_create(consignor_id):
 
 
 # ---------- Consignor statement ----------
-@require_perm("reports:view")
+
 @app.get("/consignors/<int:consignor_id>/statement")
+@require_perm("reports:view")
 def consignor_statement(consignor_id):
     ...
     consignor = db.session.get(Consignor, consignor_id) or abort(404)
