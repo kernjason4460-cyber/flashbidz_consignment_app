@@ -311,23 +311,26 @@ def require_perm(perm_name):
         return check_password_hash(self.password_hash, raw)
 
     # ---- Permission helpers ----
-    def _perm_set(self):
-        return set(p.strip() for p in (self.permissions or "").split(",") if p.strip())
-
     def has_perm(self, perm):
-        # admins can do everything
-        if (self.role or "").lower() == "admin":
-            return True
+    # Admins can do everything
+    role = (self.role or "").lower()
+    if role == "admin":
+        return True
 
-        staff_perms  = {"items:view", "items:add", "items:edit", "reports:view", "data:import", "data:export"}
-        viewer_perms = {"items:view"}
+    # If explicit permissions are set, use ONLY those
+    explicit = self._perm_set()
+    if explicit:
+        return perm in explicit
 
-        role = (self.role or "").lower()
-        if role == "staff":
-            return perm in staff_perms
-        if role == "viewer":
-            return perm in viewer_perms
-        return False
+    # Otherwise, fall back to role-based defaults
+    staff_perms  = {"items:view", "items:add", "items:edit", "reports:view", "data:import", "data:export"}
+    viewer_perms = {"items:view"}
+
+    if role == "staff":
+        return perm in staff_perms
+    if role == "viewer":
+        return perm in viewer_perms
+    return False
 
     def grant_perm(self, perm: str):
         s = self._perm_set()
