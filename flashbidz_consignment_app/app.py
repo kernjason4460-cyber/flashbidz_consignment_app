@@ -772,14 +772,12 @@ def send_email(to_addr: str, subject: str, body: str):
 # INVENTORY ROUTES
 # ---------------------------
 
-
 from sqlalchemy import func
 
-@require_perm("consignors:manage")
-@require_perm("data:import")
-@require_perm("reports:view")
+@require_perm("items:view")
 @app.get("/items")
 def items_list():
+    ...
     # NEW: optional filter by consignor
     consignor_id = request.args.get("consignor_id", type=int)
 
@@ -835,7 +833,7 @@ def items_list():
 
     return render_template("items.html", items=items, totals=totals)
 
-
+@require_perm("items:add")
 @app.get("/items/new")
 def item_new():
     return render_template("item_form.html", item=None)
@@ -954,15 +952,16 @@ def parse_date(s):
             pass
     return None
 
-
+@require_perm("items:edit")
 @app.get("/items/<int:item_id>/edit")
 def item_edit(item_id):
     item = Item.query.get_or_404(item_id)
     return render_template("item_form.html", item=item)
 
-
+@require_perm("items:edit")
 @app.post("/items/<int:item_id>/edit")
 def item_update(item_id):
+    ...
     item = Item.query.get_or_404(item_id)
 
     def dollars_to_cents(val):
@@ -982,8 +981,10 @@ def item_update(item_id):
     return redirect(url_for("items_list"))
 
 
+@require_perm("items:delete")
 @app.post("/items/<int:item_id>/delete")
 def item_delete(item_id):
+    ...
     item = Item.query.get_or_404(item_id)
     db.session.delete(item)
     db.session.commit()
@@ -991,8 +992,10 @@ def item_delete(item_id):
     return redirect(url_for("items_list"))
 
 
+@require_perm("items:sell")
 @app.get("/items/<int:item_id>/sell")
 def item_sell_form(item_id):
+    ...
     item = Item.query.get_or_404(item_id)
     if item.status == "sold":
         flash("Item already sold")
@@ -1000,8 +1003,10 @@ def item_sell_form(item_id):
     return render_template("sell_form.html", item=item)
 
 
+@require_perm("items:sell")
 @app.post("/items/<int:item_id>/sell")
 def item_sell(item_id):
+    ...
     item = Item.query.get_or_404(item_id)
     if item.status == "sold":
         flash("Item already sold")
@@ -1042,14 +1047,18 @@ def item_sell(item_id):
 
 # Create tables if they don't exist
 
+@require_perm("photos:upload")
 @app.get("/upload")
 def upload_form():
+    ...
     items = Item.query.order_by(Item.created_at.desc()).all()
     return render_template("upload.html", items=items)
 
 
+@require_perm("photos:upload")
 @app.post("/upload")
 def upload_post():
+    ...
     item_id = request.form.get("item_id", "").strip()
     if not item_id:
         flash("Please choose an item to attach photos to.")
@@ -1097,8 +1106,10 @@ def item_photos(item_id):
     photos = item.photos.order_by(Photo.uploaded_at.desc()).all()
     return render_template("photos.html", item=item, photos=photos)
 
+@require_perm("reports:view")
 @app.get("/reports")
 def reports():
+    ...
     # Optional date filters for SOLD items
     start = request.args.get("start", "").strip()  # YYYY-MM-DD
     end = request.args.get("end", "").strip()      # YYYY-MM-DD
@@ -1211,8 +1222,10 @@ def parse_date(s):
     except:
         return None
 
+@require_perm("reports:view")
 @app.get("/statements")
 def statements_index():
+    ...
     dfrom = parse_date(request.args.get("from", ""))
     dto   = parse_date(request.args.get("to", ""))
     q = Item.query.filter(Item.status == "sold", Item.consignor_id.isnot(None))
@@ -1253,8 +1266,10 @@ def parse_date(s):
     except:
         return None
 
+@require_perm("reports:view")
 @app.get("/consignors/<int:cid>/statement.csv")
 def consignor_statement_csv(cid):
+    ...
     c = Consignor.query.get_or_404(cid)
     dfrom = parse_date(request.args.get("from","") or "")
     dto   = parse_date(request.args.get("to","") or "")
@@ -1310,9 +1325,10 @@ def payouts_create(consignor_id):
 
 
 # ---------- Consignor statement ----------
-@app.get("/consignors/<int:consignor_id>/statement")
 @require_perm("reports:view")
+@app.get("/consignors/<int:consignor_id>/statement")
 def consignor_statement(consignor_id):
+    ...
     consignor = db.session.get(Consignor, consignor_id) or abort(404)
 
     # total owed from sales
@@ -1332,8 +1348,9 @@ def consignor_statement(consignor_id):
 # =========================
 
 @app.route("/consignors")
-@require_perm("consignors:edit")
+@require_perm("consignors:view")
 def consignors_list():
+    ...
     # Get query parameters
     search = (request.args.get("search") or request.args.get("q") or "").strip()
     sort_by = request.args.get("sort_by", "created_at")
