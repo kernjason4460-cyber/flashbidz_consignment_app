@@ -347,14 +347,21 @@ class Supplier(db.Model):
 
 class Contract(db.Model):
     __tablename__ = "contracts"
-
+    def get_open_contract(consignor_id: int):
+        """Return the latest DRAFT contract for a consignor, or None."""
+        return (
+            Contract.query
+            .filter_by(consignor_id=consignor_id, status="draft")
+            .order_by(Contract.id.desc())
+            .first()
+        )
     id = db.Column(db.Integer, primary_key=True)
 
     # Link to consignor
     consignor_id = db.Column(db.Integer, db.ForeignKey("consignors.id"), nullable=False)
 
     # Basic info
-    created_at = db.Column(db.String, nullable=False)  # stored as TEXT in SQLite
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     status = db.Column(db.String(20), nullable=False, default="draft")
 
     # Totals for quick reference
@@ -1240,7 +1247,35 @@ def statements_index():
 # CONSIGNOR STATEMENTS ROUTES
 # ---------------------------
 from flask import Response
-from datetime import datetime, date
+
+@require_perm("consignors:view")
+@app.get("/contracts/<int:contract_id>")
+def contract_view(contract_id):
+    contract = Contract.query.get_or_404(contract_id)
+    consignor = contract.consignor
+
+    # Items on this contract
+    items = (
+        Item.query
+        .filter_by(contract_id=contract.id)
+        .order_by(Item.created_at.asc())
+        .all()
+    )
+
+    # Simple totals (you can fancy this up later)
+    total_items = len(items)
+    total_estimated = sum((it.asking_cents or 0) for it in items) / 100.0
+    total_sale_estimate = sum((it.sale_price_cents or 0) for it in items) / 100.0
+
+    return render_template(
+        "contract_view.html",
+        contract=contract,
+        consignor=consignor,
+        items=items,
+        total_items=total_items,
+        total_estimated=total_estimated,
+        total_sale_estimate=total_sale_estimate,
+    )
 
 def parse_date(s):
     try:
