@@ -431,7 +431,7 @@ class Item(db.Model):
         except Exception:
             return 0
 
-        @property
+    @property
     def house_net(self):
         """
         Store net in CENTS.
@@ -449,6 +449,7 @@ class Item(db.Model):
         else:
             cost = self.cost_cents or 0
             return sp - cost
+
 
     @property
     def asking(self):
