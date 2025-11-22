@@ -252,44 +252,26 @@ class User(db.Model):
         }
 
     def has_perm(self, perm: str) -> bool:
-        """
-        Check if user has a given permission.
+    """
+    Check if user has a given permission.
 
-        * Admins can do everything.
-        * If `permissions` is non-empty, ONLY those are used.
-        * If `permissions` is empty, fall back to role-based defaults.
-        """
-        role = (self.role or "").lower()
+    * Admins can do everything.
+    * If `permissions` is non-empty, ONLY those are used.
+    * If `permissions` is empty, the user has NO permissions.
+    """
+    role = (self.role or "").lower()
 
-        # Admin can do anything
-        if role == "admin":
-            return True
+    # Admin can do anything
+    if role == "admin":
+        return True
 
-        # If explicit permissions are set, use only those
-        perms = self.perm_set()
-        if perms:
-            return perm in perms
+    # If explicit permissions are set, use only those
+    perms = self.perm_set()
+    if perms:
+        return perm in perms
 
-        # Role defaults when no explicit permissions are configured
-        staff_perms = {
-            "items:view", "items:add", "items:edit",
-            "photos:upload",
-            "consignors:view", "consignors:edit",
-            "suppliers:view", "suppliers:edit",
-            "sales:edit",
-            # no reports, statements, payouts by default
-        }
-        viewer_perms = {
-            "items:view",
-            # no reports by default
-        }
-
-        if role == "staff":
-            return perm in staff_perms
-        if role == "viewer":
-            return perm in viewer_perms
-
-        return False
+    # No explicit permissions → no permissions
+    return False
 class Consignor(db.Model):
     __tablename__ = "consignors"
     id         = db.Column(db.Integer, primary_key=True)
