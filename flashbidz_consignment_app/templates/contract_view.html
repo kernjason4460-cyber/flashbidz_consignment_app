@@ -1,48 +1,338 @@
-{% extends "base.html" %}
-{% block content %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Consignment Contract – FlashBidz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            background:#f4f4f4;
+        }
+        header {
+            background:#111;
+            color:#fff;
+            padding:12px 16px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+        }
+        header .logo {
+            display:flex;
+            align-items:center;
+            gap:8px;
+            font-weight:800;
+            letter-spacing:.5px;
+            color:#e60000;
+        }
+        header nav {
+            display:flex;
+            gap:16px;
+            font-size:0.9rem;
+        }
+        header nav a {
+            color:#fff;
+            text-decoration:none;
+        }
+        header nav a.logout {
+            color:#e60000;
+            font-weight:700;
+        }
 
-<h1>Consignment Contract #{{ contract.id }}</h1>
-<p>
-  Consignor: <strong>{{ consignor.name }}</strong><br>
-  Status: <strong>{{ contract.status|capitalize }}</strong><br>
-  Created: {{ contract.created_at }}
-</p>
+        .page {
+            max-width: 900px;
+            margin: 24px auto 40px;
+            background:#fff;
+            padding:24px 28px 32px;
+            box-shadow:0 8px 20px rgba(0,0,0,0.12);
+            border-radius:10px;
+        }
+        h1 {
+            margin-top:0;
+            font-size:1.6rem;
+        }
+        h2 {
+            margin-top:1.8rem;
+            font-size:1.2rem;
+        }
+        .meta {
+            display:flex;
+            flex-wrap:wrap;
+            gap:16px;
+            font-size:0.9rem;
+            margin:8px 0 18px;
+        }
+        .meta div {
+            padding:4px 10px;
+            background:#f5f5f5;
+            border-radius:6px;
+        }
+        .tag-status {
+            text-transform:uppercase;
+            font-weight:600;
+            letter-spacing:0.05em;
+        }
+        .tag-status.draft { background:#fff6e0; color:#8a5a00; }
+        .tag-status.final { background:#e8fff0; color:#0a7a3b; }
 
-{% if session.get('role') == 'admin' %}
-  {% if contract.status == 'draft' %}
-    <form method="post" action="{{ url_for('contract_lock', contract_id=contract.id) }}" style="margin-bottom:1em">
-      <button class="btn btn-danger">Lock Contract</button>
-    </form>
-  {% elif contract.status == 'locked' %}
-    <form method="post" action="{{ url_for('contract_unlock', contract_id=contract.id) }}" style="margin-bottom:1em">
-      <button class="btn btn-secondary">Unlock (Admin only)</button>
-    </form>
-  {% endif %}
-{% endif %}
+        .section-box {
+            border:1px solid #ddd;
+            border-radius:8px;
+            padding:14px 16px;
+            margin-bottom:16px;
+            background:#fafafa;
+        }
+        .section-box strong {
+            display:block;
+            margin-bottom:4px;
+        }
 
-<h2>Items on this contract ({{ total_items }})</h2>
+        ol.contract-clauses {
+            padding-left: 1.1rem;
+            margin: 0;
+        }
+        ol.contract-clauses > li {
+            margin-bottom:0.9rem;
+        }
+        ol.contract-clauses h3 {
+            margin:0 0 0.2rem;
+            font-size:1rem;
+        }
+        ol.contract-clauses p {
+            margin:0.1rem 0 0.25rem;
+            font-size:0.95rem;
+            line-height:1.4;
+        }
+        ol.contract-clauses ul {
+            margin:0.15rem 0 0.4rem 1.1rem;
+            padding:0;
+            font-size:0.95rem;
+        }
 
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>SKU</th>
-      <th>Title</th>
-      <th>Ownership</th>
-      <th>Asking</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for it in items %}
-    <tr>
-      <td>{{ it.sku }}</td>
-      <td>{{ it.title }}</td>
-      <td>{{ it.ownership }}</td>
-      <td>{{ it.asking_cents|money }}</td>
-      <td>{{ it.status }}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+        table.items {
+            width:100%;
+            border-collapse:collapse;
+            margin-top:18px;
+            font-size:0.9rem;
+        }
+        table.items th, table.items td {
+            border:1px solid #ddd;
+            padding:6px 8px;
+        }
+        table.items th {
+            background:#111;
+            color:#fff;
+            text-align:left;
+        }
+        table.items tr:nth-child(even) {
+            background:#fafafa;
+        }
+        .totals-row td {
+            font-weight:600;
+        }
 
-{% endblock %}
+        .signature-blocks {
+            display:flex;
+            flex-wrap:wrap;
+            gap:40px;
+            margin-top:26px;
+            font-size:0.95rem;
+        }
+        .signature-box {
+            flex:1 1 260px;
+            border-top:1px solid #444;
+            padding-top:6px;
+        }
+        .signature-box label {
+            display:block;
+            font-size:0.8rem;
+            color:#666;
+        }
+
+        @media print {
+            header { display:none; }
+            body { background:#fff; }
+            .page {
+                box-shadow:none;
+                margin:0;
+                border-radius:0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <span>⚡</span> <span>FlashBidz Admin</span>
+    </div>
+    <nav>
+        <a href="{{ url_for('home') }}">Home</a>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('items_list') }}">Items</a>
+        <a href="{{ url_for('upload_form') }}">Upload</a>
+        <a href="{{ url_for('consignors_list') }}">Consignors</a>
+        <a href="{{ url_for('statements_index') }}">Statements</a>
+        {% if session.get('role') == 'admin' %}
+            <a href="{{ url_for('users_list') }}">Users</a>
+            <a href="{{ url_for('admin_view') }}">Admin</a>
+        {% endif %}
+        <a href="{{ url_for('account_password_form') }}">Change Password</a>
+        <a href="{{ url_for('logout') }}" class="logout">Logout</a>
+    </nav>
+</header>
+
+<div class="page">
+
+    <h1>Consignment Contract</h1>
+
+    <div class="meta">
+        <div><strong>Consignor:</strong> {{ consignor.name }}</div>
+        {% if consignor.phone %}<div><strong>Phone:</strong> {{ consignor.phone }}</div>{% endif %}
+        {% if consignor.email %}<div><strong>Email:</strong> {{ consignor.email }}</div>{% endif %}
+        <div><strong>Contract ID:</strong> #{{ contract.id }}</div>
+        <div><strong>Created:</strong> {{ contract.created_at }}</div>
+        <div class="tag-status {{ 'draft' if contract.status == 'draft' else 'final' }}">
+            Status: {{ contract.status|upper }}
+        </div>
+    </div>
+
+    <div class="section-box">
+        <strong>Summary:</strong>
+        This contract covers all items listed below and any related services provided by
+        FlashBidz for this consignor. Once finalized, the terms apply to all items on this
+        contract and govern how they are marketed, sold, paid out, and handled if unsold.
+    </div>
+
+    <h2>Legal Terms</h2>
+
+    <ol class="contract-clauses">
+        <li>
+            <h3>Ownership & Accuracy</h3>
+            <p>Consignor confirms they are the legal owner of all items or are authorized to sell them, and that items are free of liens, claims, and other restrictions.</p>
+            <p>Consignor agrees to provide accurate, truthful information about all items. FlashBidz does not independently verify authenticity unless specifically stated in writing.</p>
+        </li>
+
+        <li>
+            <h3>Item Condition & “As-Is / Where-Is”</h3>
+            <p>All items are sold strictly <strong>AS-IS, WHERE-IS</strong>, with no warranties or guarantees, express or implied, including fitness for a particular purpose.</p>
+            <ul>
+                <li>FlashBidz is not responsible for hidden defects, missing parts, or prior damage.</li>
+                <li>Buyers are encouraged to inspect items before bidding when possible.</li>
+            </ul>
+        </li>
+
+        <li>
+            <h3>Commission & Fees</h3>
+            <p>Unless otherwise agreed in writing:</p>
+            <ul>
+                <li><strong>Standard Consignment:</strong> 13% of the final selling price.</li>
+                <li><strong>Estate / Full-Service Consignment:</strong> 35% of the final selling price.</li>
+            </ul>
+            <p>Additional cleanout or marketing fees may be applied where selected and will appear on the consignor’s statement. FlashBidz may deduct any unpaid balances from amounts otherwise payable to the consignor.</p>
+        </li>
+
+        <li>
+            <h3>Listing, Photography & Marketing</h3>
+            <p>Consignor authorizes FlashBidz to photograph, describe, lot, bundle, or separate items as needed and to use those photos and descriptions in online listings, social media, and marketing materials.</p>
+            <p>FlashBidz may decline or remove items that are unsafe, illegal, counterfeit, unsanitary, or not suitable for sale on the platform.</p>
+        </li>
+
+        <li>
+            <h3>Pricing, Lotting & Sale Format</h3>
+            <p>Final sale prices are determined by bidders or buyers on the marketplace. Reserve prices are not guaranteed unless expressly documented in writing.</p>
+            <p>FlashBidz may choose the most appropriate sale channel (auction, fixed price, marketplace, or in-store) to maximize sell-through and proceeds.</p>
+        </li>
+
+        <li>
+            <h3>Payouts</h3>
+            <p>Payouts are generally issued within <strong>30 days</strong> of the close of the auction or final sale, after funds have cleared and buyer payments have been processed.</p>
+            <p>Payouts are calculated as gross selling price minus commission, fees, and any outstanding balances or advances owed to FlashBidz.</p>
+        </li>
+
+        <li>
+            <h3>Non-Pickup, Storage & Abandoned Items</h3>
+            <p>If buyers fail to pick up items within the published pickup window, FlashBidz may, at its discretion, resell, dispose of, or donate those items without further payment to the consignor.</p>
+            <p>For unsold or returned items, the consignor is responsible for retrieving items within 14 days of notification or the end of the contract period. After 7 days, storage fees of <strong>$2 per item per day</strong> may be charged. After 14 days, items may be treated as <strong>abandoned</strong> and become the property of FlashBidz with no further obligation to the consignor.</p>
+        </li>
+
+        <li>
+            <h3>Hold Harmless & Limitation of Liability</h3>
+            <p>Consignor agrees to hold FlashBidz, its owners, and staff harmless from claims arising out of the ownership, condition, use, or sale of any consigned items, including buyer disputes, chargebacks, and claims of damage or defect.</p>
+            <p>To the fullest extent permitted by law, FlashBidz’s total liability for any claim related to a consigned item is limited to the commission earned by FlashBidz on that specific item.</p>
+        </li>
+
+        <li>
+            <h3>Right to Refuse or Remove Items</h3>
+            <p>FlashBidz may refuse, pull from sale, or dispose of any item that is unsafe, illegal, unsanitary, counterfeit, or materially misrepresented, or that otherwise, in FlashBidz’s judgment, poses a risk to the company or buyers.</p>
+        </li>
+
+        <li>
+            <h3>Contract Binding & Digital Records</h3>
+            <p>This contract, together with FlashBidz’s posted terms and conditions and any written addenda, forms the complete agreement for the items covered under this contract ID.</p>
+            <p>Digital signatures, click-through acceptances, and electronic records (including this on-screen contract) are valid and enforceable as if signed on paper.</p>
+        </li>
+    </ol>
+
+    <h2>Items Covered by This Contract</h2>
+
+    <table class="items">
+        <thead>
+            <tr>
+                <th style="width:12%">SKU</th>
+                <th>Title</th>
+                <th style="width:12%">Ownership</th>
+                <th style="width:10%">Status</th>
+                <th style="width:12%">Asking</th>
+                <th style="width:12%">Sale Price</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% if items %}
+            {% for it in items %}
+            <tr>
+                <td>{{ it.sku }}</td>
+                <td>{{ it.title }}</td>
+                <td>{{ it.ownership }}</td>
+                <td>{{ it.status }}</td>
+                <td>{{ it.asking_cents|money }}</td>
+                <td>{{ it.sale_price_cents|money }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="totals-row">
+                <td colspan="2">Total Items: {{ total_items }}</td>
+                <td colspan="2">Estimated Asking Total:</td>
+                <td colspan="2">${{ "%.2f"|format(total_estimated) }}</td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">No items are currently attached to this contract.</td>
+            </tr>
+        {% endif %}
+        </tbody>
+    </table>
+
+    <div class="signature-blocks">
+        <div class="signature-box">
+            <label>Consignor Signature</label>
+            {% if contract.signature_data %}
+                <div>(Signature on file)</div>
+            {% else %}
+                <div>&nbsp;</div>
+            {% endif %}
+        </div>
+        <div class="signature-box">
+            <label>Printed Name</label>
+            <div>{{ consignor.name }}</div>
+        </div>
+        <div class="signature-box">
+            <label>Date</label>
+            <div>{{ contract.created_at }}</div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
