@@ -251,27 +251,42 @@ class User(db.Model):
             if p.strip()
         }
 
-    def has_perm(self, perm: str) -> bool:
-    """
-    Check if user has a given permission.
+        def has_perm(self, perm: str) -> bool:
+        """
+        Check if user has a given permission.
 
-    * Admins can do everything.
-    * If `permissions` is non-empty, ONLY those are used.
-    * If `permissions` is empty, the user has NO permissions.
-    """
-    role = (self.role or "").lower()
+        * Admins can do everything.
+        * If `permissions` is non-empty, ONLY those are used.
+        * If `permissions` is empty, fall back to very conservative role defaults.
+        """
+        role = (self.role or "").lower()
 
-    # Admin can do anything
-    if role == "admin":
-        return True
+        # Admin can do anything
+        if role == "admin":
+            return True
 
-    # If explicit permissions are set, use only those
-    perms = self.perm_set()
-    if perms:
-        return perm in perms
+        # If explicit permissions are set, use only those
+        perms = self.perm_set()
+        if perms:
+            return perm in perms
 
-    # No explicit permissions → no permissions
-    return False
+        # ---- SAFE DEFAULTS (no reports by default) ----
+        staff_perms = {
+            "items:view", "items:add", "items:edit",
+            "photos:upload",
+            "suppliers:view", "suppliers:edit",
+            "sales:edit",
+        }
+        viewer_perms = {
+            "items:view",
+        }
+
+        if role == "staff":
+            return perm in staff_perms
+        if role == "viewer":
+            return perm in viewer_perms
+
+        return False
 class Consignor(db.Model):
     __tablename__ = "consignors"
     id         = db.Column(db.Integer, primary_key=True)
@@ -2247,33 +2262,6 @@ def payouts_generate():
     return render_template("payouts_generate.html", consignor_ids=consignor_ids)
 
 # ---------- REPORTS ----------
-@app.route("/reports")
-@require_perm("reports:view")
-def reports_dashboard():
-    inv = db.session.execute(db.text("""
-      SELECT COUNT(*) AS num_items,
-             COALESCE(SUM(qty_on_hand),0) AS total_units,
-             COALESCE(SUM(cost_cents),0) AS cost_cents
-      FROM items
-    """)).mappings().first()
-
-    sales = db.session.execute(db.text("""
-      SELECT COALESCE(SUM(sale_price_cents),0) AS gross_cents,
-             COALESCE(SUM(shipping_fee_cents + marketplace_fee_cents),0) AS fees_cents
-      FROM sales
-      WHERE sale_date >= DATE('now','-30 day')
-    """)).mappings().first()
-
-    top = db.session.execute(db.text("""
-      SELECT i.title, COALESCE(SUM(s.sale_price_cents),0) AS revenue_cents
-      FROM sales s JOIN items i ON i.id=s.item_id
-      GROUP BY i.id
-      ORDER BY revenue_cents DESC
-      LIMIT 10
-    """)).mappings().all()
-
-    return render_template("reports_dashboard.html",
-        inv=inv, sales=sales, top=top)
 
 @app.after_request
 def add_no_cache_headers(response):
