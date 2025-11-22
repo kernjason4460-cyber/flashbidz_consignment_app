@@ -273,16 +273,15 @@ class User(db.Model):
         # Role defaults when no explicit permissions are configured
         staff_perms = {
             "items:view", "items:add", "items:edit",
-            "reports:view",
-            "data:import", "data:export",
-            "consignors:edit",
+            "photos:upload",
+            "consignors:view", "consignors:edit",
             "suppliers:view", "suppliers:edit",
             "sales:edit",
-            "payouts:view", "payouts:edit",
+            # no reports, statements, payouts by default
         }
         viewer_perms = {
             "items:view",
-            "reports:view",
+            # no reports by default
         }
 
         if role == "staff":
