@@ -1924,8 +1924,10 @@ def users_delete(uid):
     return redirect(url_for("users_list"))
 
 @app.get("/account/password")
-def account_password():
-    return render_template("account_password.html")
+def account_password_form():
+    if not session.get("user_id"):
+        return redirect(url_for("login", next=request.path))
+    return render_template("change_password.html")
 
 @app.post("/account/password")
 def account_password_change():
