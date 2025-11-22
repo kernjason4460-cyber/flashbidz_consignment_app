@@ -242,7 +242,7 @@ class User(db.Model):
         from werkzeug.security import check_password_hash
         return check_password_hash(self.password_hash, raw)
 
-    # ---------- Permission helpers ----------
+       # ---------- Permission helpers ----------
     def perm_set(self):
         """Return a set of permission strings from the comma-separated field."""
         return {
@@ -251,7 +251,7 @@ class User(db.Model):
             if p.strip()
         }
 
-        def has_perm(self, perm: str) -> bool:
+    def has_perm(self, perm: str) -> bool:
         """
         Check if user has a given permission.
 
@@ -276,6 +276,7 @@ class User(db.Model):
             "photos:upload",
             "suppliers:view", "suppliers:edit",
             "sales:edit",
+            # deliberately NO "reports:view" or "payouts:view"
         }
         viewer_perms = {
             "items:view",
@@ -430,7 +431,7 @@ class Item(db.Model):
         except Exception:
             return 0
 
-    @property
+        @property
     def house_net(self):
         """
         Store net in CENTS.
@@ -448,12 +449,13 @@ class Item(db.Model):
         else:
             cost = self.cost_cents or 0
             return sp - cost
-        @property
-        def asking(self):
-            """Return asking price in dollars from asking_cents."""
-            if self.asking_cents is None:
-                return None
-            return self.asking_cents / 100.0
+
+    @property
+    def asking(self):
+        """Return asking price in dollars from asking_cents."""
+        if self.asking_cents is None:
+            return None
+        return self.asking_cents / 100.0
 from datetime import datetime
 
 def next_sku():
@@ -918,7 +920,7 @@ def item_update(item_id):
     item.ownership = request.form.get("ownership", "owned").strip()
     item.category = request.form.get("category", "").strip() or None
     item.cost_cents = dollars_to_cents(request.form.get("cost", ""))
-    item.asking = dollars_to_cents(request.form.get("asking", ""))
+    item.asking_cents = dollars_to_cents(request.form.get("asking", ""))
     item.consignor = request.form.get("consignor", "").strip() or None
     item.notes = request.form.get("notes", "").strip() or None
     db.session.commit()
