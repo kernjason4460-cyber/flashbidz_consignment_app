@@ -118,7 +118,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 import os  # at the top of file, if not already there
 
 # Use DATABASE_URL if present (Render/Postgres), otherwise fall back to local sqlite
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
     "DATABASE_URL",
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
