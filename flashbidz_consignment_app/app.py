@@ -1873,65 +1873,104 @@ def export_consignors_csv():
     return resp
     
 # ---------- USERS (Admin) ----------
+def _require_admin():
+    """Simple helper to ensure the current session is an admin."""
+    if not session.get("user_id"):
+        # Not logged in → send to login
+        return redirect(url_for("login", next=request.path))
+    if (session.get("role") or "").lower() != "admin":
+        flash("Admin access required.")
+        return redirect(url_for("home"))
+    return None
+
+
 @app.get("/users")
 def users_list():
-    # admin-only (guard also checks, but we double-check here)
-    if session.get("role") != "admin":
-        return "Forbidden", 403
+    # Guard
+    maybe_resp = _require_admin()
+    if maybe_resp:
+        return maybe_resp
+
     users = User.query.order_by(User.created_at.desc()).all()
     return render_template("manage_users.html", users=users)
 
+
 @app.post("/users/new")
 def users_new():
-    if session.get("role") != "admin":
-        return "Forbidden", 403
+    # Guard
+    maybe_resp = _require_admin()
+    if maybe_resp:
+        return maybe_resp
+
     username = (request.form.get("username") or "").strip()
     password = (request.form.get("password") or "").strip()
-    role     = (request.form.get("role") or "staff").strip()
+    role     = (request.form.get("role") or "staff").strip().lower()
+
     if not username or not password:
-        flash("Username and password are required")
+        flash("Username and password are required.")
         return redirect(url_for("users_list"))
-    if role not in ("admin", "staff"):
+
+    if role not in ("admin", "staff", "viewer"):
         role = "staff"
+
+    # Must be unique
     if User.query.filter_by(username=username).first():
-        flash("That username is taken")
+        flash("That username is already taken.")
         return redirect(url_for("users_list"))
+
     u = User(username=username, role=role)
     u.set_password(password)
-    db.session.add(u); db.session.commit()
-    flash(f"User '{username}' created")
+    # start with no explicit permissions; you can edit later
+    u.permissions = ""
+
+    db.session.add(u)
+    db.session.commit()
+
+    flash(f"User '{username}' created.")
     return redirect(url_for("users_list"))
+
 
 @app.post("/users/<int:uid>/role")
 def users_set_role(uid):
-    if session.get("role") != "admin":
-        return "Forbidden", 403
+    # Guard
+    maybe_resp = _require_admin()
+    if maybe_resp:
+        return maybe_resp
+
+    u = User.query.get_or_404(uid)
 
     role = (request.form.get("role") or "staff").strip().lower()
     if role not in ("admin", "staff", "viewer"):
         role = "staff"
 
-    perms = (request.form.get("permissions") or "").strip()
+    permissions = (request.form.get("permissions") or "").strip()
 
-    u = User.query.get_or_404(uid)
     u.role = role
-    u.permissions = perms  # this is your comma-separated permissions string
+    u.permissions = permissions
     db.session.commit()
 
-    flash(f"Role/permissions updated for {u.username}")
+    flash(f"Updated {u.username}: role → {role}, permissions → {permissions or '(none)'}")
     return redirect(url_for("users_list"))
+
 
 @app.post("/users/<int:uid>/delete")
 def users_delete(uid):
-    if session.get("role") != "admin":
-        return "Forbidden", 403
+    # Guard
+    maybe_resp = _require_admin()
+    if maybe_resp:
+        return maybe_resp
+
     u = User.query.get_or_404(uid)
+
+    # Don’t let you delete the main admin account by accident
     if u.username == "admin":
-        flash("Cannot delete the primary admin user")
+        flash("You cannot delete the primary 'admin' user.")
         return redirect(url_for("users_list"))
+
     db.session.delete(u)
     db.session.commit()
-    flash(f"Deleted {u.username}")
+
+    flash(f"Deleted user '{u.username}'.")
     return redirect(url_for("users_list"))
 
 @app.get("/account/password")
