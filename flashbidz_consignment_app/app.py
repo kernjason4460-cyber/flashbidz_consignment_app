@@ -1276,7 +1276,46 @@ def contract_view(contract_id):
         total_estimated=total_estimated,
         total_sale_estimate=total_sale_estimate,
     )
+def _require_admin():
+    if not session.get("user_id"):
+        return redirect(url_for("login", next=request.path))
+    if (session.get("role") or "").lower() != "admin":
+        flash("Admin access required.")
+        return redirect(url_for("home"))
+    return None
 
+@app.post("/contracts/<int:contract_id>/lock")
+def contract_lock(contract_id):
+    maybe = _require_admin()
+    if maybe:
+        return maybe
+
+    contract = Contract.query.get_or_404(contract_id)
+    if contract.status != "draft":
+        flash("Contract is already locked.")
+        return redirect(url_for("contract_view", contract_id=contract.id))
+
+    contract.status = "locked"
+    db.session.commit()
+    flash("Contract locked. New items will go on a new draft contract.")
+    return redirect(url_for("contract_view", contract_id=contract.id))
+
+
+@app.post("/contracts/<int:contract_id>/unlock")
+def contract_unlock(contract_id):
+    maybe = _require_admin()
+    if maybe:
+        return maybe
+
+    contract = Contract.query.get_or_404(contract_id)
+    if contract.status != "locked":
+        flash("Contract is not locked.")
+        return redirect(url_for("contract_view", contract_id=contract.id))
+
+    contract.status = "draft"
+    db.session.commit()
+    flash("Contract unlocked (be careful – items can be changed).")
+    return redirect(url_for("contract_view", contract_id=contract.id))
 def parse_date(s):
     try:
         return datetime.strptime(s, "%Y-%m-%d").date()
