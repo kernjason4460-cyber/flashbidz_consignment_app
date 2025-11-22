@@ -1,19 +1,27 @@
+
 <header style="background:#111;color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
-  <div style="display:flex;gap:10px;align-items:center">
-    <div style="color:#e60000;font-weight:800;letter-spacing:.5px">⚡ FlashBidz</div>
-    <!-- optional logo -->
-    <!-- <img src="{{ (Settings.query.get(1).logo_url if Settings else '') or '' }}" style="height:24px" alt=""> -->
-  </div>
 
-  <nav style="display:flex;gap:14px">
-    <a href="/" style="color:#fff;text-decoration:none">Home</a>
-    <a href="/dashboard" style="color:#fff;text-decoration:none">Dashboard</a>
-    <a href="/items" style="color:#fff;text-decoration:none">Items</a>
-    <a href="/upload" style="color:#fff;text-decoration:none">Upload</a>
-    <a href="/consignors" style="color:#fff;text-decoration:none">Consignors</a>
-    <a href="/statements" style="color:#fff;text-decoration:none">Statements</a>
-    <a href="/admin" style="color:#fff;text-decoration:none">Admin</a>
-    <a href="/logout" style="color:#e60000;text-decoration:none;font-weight:700">Logout</a>
-  </nav>
+    <div style="display:flex;gap:10px;align-items:center">
+        <div style="color:#e60000;font-weight:800;letter-spacing:.5px">⚡ FlashBidz</div>
+    </div>
+
+    <nav style="display:flex;gap:16px">
+
+        <a href="/"          style="color:#fff;text-decoration:none">Home</a>
+        <a href="/dashboard" style="color:#fff;text-decoration:none">Dashboard</a>
+        <a href="/items"     style="color:#fff;text-decoration:none">Items</a>
+        <a href="/upload"    style="color:#fff;text-decoration:none">Upload</a>
+        <a href="/consignors" style="color:#fff;text-decoration:none">Consignors</a>
+        <a href="/statements" style="color:#fff;text-decoration:none">Statements</a>
+
+        {% if session.get('role') == 'admin' %}
+            <a href="/users" style="color:#fff;text-decoration:none;font-weight:600">Users</a>
+            <a href="/admin" style="color:#fff;text-decoration:none;font-weight:600">Admin</a>
+        {% endif %}
+
+        <a href="/account/password" style="color:#fff;text-decoration:none">Change Password</a>
+
+        <a href="/logout" style="color:#e60000;text-decoration:none;font-weight:700">Logout</a>
+    </nav>
+
 </header>
-
