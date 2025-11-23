@@ -1276,10 +1276,10 @@ from flask import Response
 @require_perm("consignors:view")
 @app.get("/contracts/<int:contract_id>")
 def contract_view(contract_id):
-    contract = Contract.query.get_or_404(contract_id)
+    contract  = Contract.query.get_or_404(contract_id)
     consignor = contract.consignor
+    settings  = get_settings()
 
-    # Items on this contract
     items = (
         Item.query
         .filter_by(contract_id=contract.id)
@@ -1287,10 +1287,18 @@ def contract_view(contract_id):
         .all()
     )
 
-    # Simple totals (you can fancy this up later)
     total_items = len(items)
     total_estimated = sum((it.asking_cents or 0) for it in items) / 100.0
     total_sale_estimate = sum((it.sale_price_cents or 0) for it in items) / 100.0
+
+    # pick a commission % to show in the contract
+    commission_pct = None
+    if getattr(contract, "commission_pct", None) is not None:
+        commission_pct = contract.commission_pct
+    elif consignor and consignor.commission_pct is not None:
+        commission_pct = consignor.commission_pct
+    else:
+        commission_pct = (settings.default_consignor_rate or 0.65) * 100.0
 
     return render_template(
         "contract_view.html",
@@ -1300,6 +1308,8 @@ def contract_view(contract_id):
         total_items=total_items,
         total_estimated=total_estimated,
         total_sale_estimate=total_sale_estimate,
+        settings=settings,
+        commission_pct=commission_pct,
     )
 def _require_admin():
     if not session.get("user_id"):
