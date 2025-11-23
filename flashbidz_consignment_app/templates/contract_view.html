@@ -279,7 +279,27 @@
         Email: {{ consignor.email }}
       {% endif %}
     </div>
-
+<p class="legal-heading">Authorized Sales Channels</p>
+<div class="box">
+  <p style="margin:0 0 4px 0;">
+    Based on the selections on file for this consignor, FlashBidz is authorized to sell items through
+    the following channels:
+  </p>
+  <ul style="margin:0 0 0 18px;padding:0;">
+    {% if consignor.sell_at_auction %}
+      <li>Auction – FlashBidz online auctions at 13% commission.</li>
+    {% endif %}
+    {% if consignor.sell_in_store %}
+      <li>In-Store / Local Marketplace – retail / marketplace sales at 25% commission.</li>
+    {% endif %}
+    {% if consignor.sell_on_ebay %}
+      <li>eBay – online sales at 25% commission plus actual eBay fees.</li>
+    {% endif %}
+    {% if not (consignor.sell_at_auction or consignor.sell_in_store or consignor.sell_on_ebay) %}
+      <li><em>No channels currently selected – please update consignor settings.</em></li>
+    {% endif %}
+  </ul>
+</div>
     <!-- Items summary -->
     <h2 class="section-title">2. Inventory Covered by this Agreement</h2>
     <p>
