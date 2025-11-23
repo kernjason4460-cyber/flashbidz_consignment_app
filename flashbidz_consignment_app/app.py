@@ -853,7 +853,6 @@ def items_list():
 @require_perm("items:add")
 @app.get("/items/new")
 def item_new():
-    # All consignors for the dropdown
     consignors = Consignor.query.order_by(Consignor.name.asc()).all()
     return render_template("item_form.html", item=None, consignors=consignors)
 
