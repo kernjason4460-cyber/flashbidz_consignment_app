@@ -64,7 +64,27 @@
         name="advance_balance"
         value="{% if consignor and consignor.advance_balance is not none %}{{ consignor.advance_balance | round(2) }}{% endif %}"
       />
+<hr>
 
+<h3>Authorized Sales Channels</h3>
+
+<label>
+  <input type="checkbox" name="sell_at_auction"
+         {% if consignor and consignor.sell_at_auction %}checked{% elif not consignor %}checked{% endif %}>
+  Sell in FlashBidz auctions (13% commission)
+</label><br>
+
+<label>
+  <input type="checkbox" name="sell_in_store"
+         {% if consignor and consignor.sell_in_store %}checked{% endif %}>
+  Sell in-store / local marketplace (25% commission)
+</label><br>
+
+<label>
+  <input type="checkbox" name="sell_on_ebay"
+         {% if consignor and consignor.sell_on_ebay %}checked{% endif %}>
+  Sell on eBay (25% commission + eBay fees)
+</label><br>
       <label>Driver’s License (notes / where image is saved)</label>
       <input
         type="text"
