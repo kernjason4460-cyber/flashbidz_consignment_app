@@ -77,23 +77,21 @@
         </div>
       </div>
 
-     <div class="form-row" id="consignor-row">
-    <label for="consignor">Consignor (if consigned)</label>
-    <select name="consignor" id="consignor">
-        <option value="">-- None / House Owned --</option>
-        {% for c in consignors %}
-            <option value="{{ c.name }}"
-                {% if item and item.consignor == c.name %}
-                    selected
-                {% endif %}>
-                {{ c.name }}
-            </option>
-        {% endfor %}
-    </select>
-    <small style="color:#666;display:block;margin-top:4px;">
-        Only used when Ownership is set to “Consigned”.
-    </small>
-</div>
+      <div class="form-row" id="consignor-row">
+          <label for="consignor">Consignor (if consigned)</label>
+          <select name="consignor" id="consignor">
+              <option value="">-- None / House Owned --</option>
+              {% for c in consignors %}
+              <option value="{{ c.name }}"
+                  {% if item and item.consignor == c.name %}selected{% endif %}>
+                  {{ c.name }}
+              </option>
+              {% endfor %}
+          </select>
+          <small style="color:#666;display:block;margin-top:4px;">
+              Only used when Ownership is set to “Consigned”.
+          </small>
+      </div>
         <div>
           <label>Notes</label>
           <input name="notes" value="{{ item.notes or '' }}"/>
