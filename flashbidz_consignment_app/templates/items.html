@@ -124,13 +124,18 @@
         <td>{{ it.sale_date or '' }}</td>
        <td>{{ it.consignor or it.consignor_id or "" }}</td>
        <td>
-         {% if it.contract %}
-           #{{ it.contract.id }} ({{ it.contract.status }})
-         {% elif it.contract_id %}
-           #{{ it.contract_id }}
-         {% else %}
-           —
-         {% endif %}
+           {% if it.contract %}
+               <a href="/contracts/{{ it.contract.id }}" style="text-decoration:none">
+                   #{{ it.contract.id }}
+               </a>
+               ({{ it.contract.status }})
+           {% elif it.contract_id %}
+               <a href="/contracts/{{ it.contract_id }}" style="text-decoration:none">
+                   #{{ it.contract_id }}
+               </a>
+           {% else %}
+                –
+           {% endif %}
        </td>
        <td>{{ it.buyer_name or "" }}</td>
         <td class="row-actions">
