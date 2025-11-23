@@ -1,427 +1,186 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
     <meta charset="utf-8">
-    <title>Consignment Contract – {{ consignor.name }}</title>
+    <title>Consignment Contract #{{ contract.id }}</title>
     <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #111;
-            color: #111;
-            margin: 0;
-            padding: 0;
-        }
-        .page {
-            max-width: 900px;
-            margin: 32px auto;
-            background: #fff;
-            padding: 32px 40px;
-            box-shadow: 0 0 12px rgba(0,0,0,.45);
-            border-radius: 8px;
-        }
-        .brand {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .brand-name {
-            font-weight: 800;
-            color: #e60000;
-            letter-spacing: .5px;
-        }
-        .tagline {
-            font-size: 12px;
-            color: #444;
-        }
-        h1 {
-            margin-top: 0;
-            font-size: 24px;
-            border-bottom: 2px solid #e60000;
-            padding-bottom: 6px;
-        }
-        h2 {
-            font-size: 16px;
-            margin-top: 18px;
-            margin-bottom: 6px;
-        }
-        p, li {
-            font-size: 13px;
-            line-height: 1.5;
-        }
-        .section {
-            margin-bottom: 10px;
-        }
-        .two-col {
-            display: flex;
-            justify-content: space-between;
-            gap: 24px;
-            font-size: 13px;
-        }
-        .two-col div {
-            flex: 1;
-        }
-        .checkbox-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-        .box {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 1px solid #333;
-            margin-right: 4px;
-        }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 12px;
-            font-size: 12px;
-        }
-        .items-table th,
-        .items-table td {
-            border: 1px solid #ddd;
-            padding: 4px 6px;
-        }
-        .items-table th {
-            background: #f4f4f4;
-            text-align: left;
-        }
-        .totals-row td {
-            font-weight: 600;
-        }
-        .muted {
-            color: #666;
-            font-size: 11px;
-        }
-        .signature-row {
-            margin-top: 24px;
-            display: flex;
-            justify-content: space-between;
-            gap: 40px;
-            font-size: 13px;
-        }
-        .sig-block {
-            flex: 1;
-        }
-        .sig-line {
-            border-bottom: 1px solid #000;
-            height: 24px;
-            margin-bottom: 4px;
-        }
-        .sig-label {
-            font-size: 11px;
-            color: #444;
-        }
-        .print-actions {
-            text-align: right;
-            margin-bottom: 12px;
-        }
-        .btn-print {
-            background: #e60000;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            padding: 6px 12px;
-            font-size: 12px;
-            cursor: pointer;
-        }
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 24px; }
+        h1, h2, h3 { margin-bottom: 4px; }
+        .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:8px; margin-bottom:16px; }
+        .brand { font-weight:800; color:#e60000; font-size:20px; }
+        .status-pill { padding:4px 10px; border-radius:999px; font-size:12px; text-transform:uppercase; }
+        .status-draft { background:#fff4cc; color:#a66a00; border:1px solid #f0d48a; }
+        .status-locked { background:#e6ffed; color:#0b7a2a; border:1px solid #9ae6b4; }
+
+        .section { margin-bottom:18px; }
+        .label { font-weight:600; }
+        table { width:100%; border-collapse:collapse; margin-top:6px; font-size:13px; }
+        th, td { border:1px solid #ccc; padding:4px 6px; text-align:left; }
+        th { background:#f5f5f5; }
+        .totals { margin-top:8px; font-size:13px; }
+        .totals div { margin:2px 0; }
+
+        .terms { font-size:12px; line-height:1.4; }
+        .terms p { margin:4px 0; }
+        .terms ol { margin:4px 0 4px 18px; padding:0; }
+
+        .signature-blocks { display:flex; gap:32px; margin-top:24px; font-size:12px; }
+        .sig-box { flex:1; }
+        .sig-line { border-bottom:1px solid #000; height:24px; margin-bottom:4px; }
+
         @media print {
-            body { background: #fff; }
-            .page { box-shadow: none; margin: 0; border-radius: 0; }
-            .print-actions { display: none; }
+            .no-print { display:none !important; }
+            body { margin:0.5in; }
         }
     </style>
 </head>
 <body>
-<div class="page">
 
-    <div class="print-actions">
-        <a href="{{ url_for('consignors_list') }}" style="margin-right:12px;font-size:12px;">← Back to Consignors</a>
-        <button class="btn-print" onclick="window.print()">Print / Save PDF</button>
-    </div>
-
-    <div class="brand">
-        <div>
-            <div class="brand-name">⚡ FlashBidz</div>
-            <div class="tagline">Consignment & Estate Services – Neighbors Helping Neighbors</div>
+<div class="header">
+    <div>
+        <div class="brand">⚡ FlashBidz</div>
+        <div style="font-size:12px;margin-top:4px;">
+            {{ settings.store_address or "Mattawan, Michigan" }}<br>
+            {{ settings.store_phone or "" }}
         </div>
-        <div style="text-align:right;font-size:11px;">
-            <div>Contract ID: {{ contract.id }}</div>
-            <div>Created: {{ contract.created_at }}</div>
-            {% if contract.status %}
-                <div>Status: {{ contract.status|upper }}</div>
+    </div>
+    <div style="text-align:right;font-size:12px;">
+        <div><strong>Consignment Contract</strong></div>
+        <div>Contract #: {{ contract.id }}</div>
+        <div>Date Created: {{ contract.created_at }}</div>
+        <div>Status:
+            {% if contract.status == "locked" %}
+                <span class="status-pill status-locked">Locked</span>
+            {% else %}
+                <span class="status-pill status-draft">Draft</span>
             {% endif %}
         </div>
+        <div class="no-print" style="margin-top:6px;">
+            <button onclick="window.print()">Print / Save as PDF</button>
+        </div>
     </div>
+</div>
 
-    <h1>Universal Consignment & Estate Agreement</h1>
-
-    <div class="section two-col">
+<div class="section">
+    <h2>Consignor Information</h2>
+    <div style="font-size:13px;">
+        <div><span class="label">Name:</span> {{ consignor.name }}</div>
         <div>
-            <strong>Consignor</strong><br>
-            Name: {{ consignor.name }}<br>
-            Phone: {{ consignor.phone or "" }}<br>
-            Email: {{ consignor.email or "" }}<br>
+            <span class="label">Address:</span>
+            {{ consignor.street or "" }}
+            {% if consignor.city %}, {{ consignor.city }}{% endif %}
+            {% if consignor.state %}, {{ consignor.state }}{% endif %}
+            {% if consignor.postal_code %} {{ consignor.postal_code }}{% endif %}
         </div>
-        <div>
-            <strong>FlashBidz</strong><br>
-            Company: FlashBidz LLC<br>
-            Address: {{ get_settings().store_address if get_settings().store_address else "Mattawan, Michigan" }}<br>
-            Phone: {{ get_settings().store_phone or "" }}<br>
-        </div>
+        <div><span class="label">Phone:</span> {{ consignor.phone or "" }}</div>
+        <div><span class="label">Email:</span> {{ consignor.email or "" }}</div>
     </div>
+</div>
 
-    <div class="section">
-        <h2>1. Type of Services (Universal Contract)</h2>
-        <p>This Agreement may be used for any of the following arrangements. The applicable option(s) should be
-           selected or initialed on the printed copy or noted in the contract file.</p>
-
-        <div class="checkbox-row">
-            <span class="box"></span>
-            <span><strong>Standard Consignment</strong> – individual items or small lots brought to the FlashBidz location.
-                Default commission: <strong>13% of gross sale price</strong>, unless a different rate is written below
-                or in the consignor profile.</span>
-        </div>
-
-        <div class="checkbox-row">
-            <span class="box"></span>
-            <span><strong>Estate / Full-Service Consignment</strong> – estates, large collections, or on-site cleanouts.
-                Default commission: <strong>35% of gross sale price</strong>, plus any agreed cleanout and/or marketing
-                fees listed below.</span>
-        </div>
-
-        <div class="checkbox-row">
-            <span class="box"></span>
-            <span><strong>Special / Other Arrangement</strong> – custom terms written in Section 6 or in the notes field
-                of this contract.</span>
-        </div>
-
-        <p style="margin-top:6px;">
-            <strong>Agreed commission for this consignor:</strong>
-            {{ (consignor.commission_pct or 13.0)|round(2) }}% of gross sale price,
-            unless otherwise noted here: _______________________________________
-        </p>
-        <p class="muted">
-            Note: FlashBidz also charges buyers a separate buyer’s premium, currently 12%,
-            which is <strong>retained by FlashBidz</strong> and not shared with the consignor.
-        </p>
-    </div>
-
-    <div class="section">
-        <h2>2. Property, Title & Authority</h2>
-        <ol>
-            <li>Consignor represents that all property delivered to FlashBidz (the “Property”) is owned by Consignor
-                and is free and clear of all liens, security interests, or other claims, or that Consignor has full
-                legal authority to consign and sell the Property.</li>
-            <li>Consignor agrees not to consign stolen, counterfeit, or illegal items. If any such items are discovered,
-                FlashBidz may remove them from sale, cooperate with law enforcement, and charge reasonable handling or
-                disposal fees.</li>
-            <li>Consignor agrees to disclose any known defects, safety issues, recalls, or material facts regarding the
-                Property. FlashBidz may rely on information provided by Consignor and is not responsible for errors in
-                information supplied by Consignor.</li>
-        </ol>
-    </div>
-
-    <div class="section">
-        <h2>3. FlashBidz Authority & Sale Process</h2>
-        <ol>
-            <li>Consignor authorizes FlashBidz to photograph, lot, describe, price, and sell the Property by public
-                auction, online auction, fixed-price sale, or other selling channel (including, without limitation,
-                in-store sales, Facebook Marketplace, and eBay) at FlashBidz’s discretion.</li>
-            <li>FlashBidz has sole discretion on how to group or separate items into lots, starting bids, reserve
-                decisions (if any), scheduling of auctions, and selection of selling platforms.</li>
-            <li>All sales to buyers are “<strong>as-is, where-is</strong>,” with no warranties expressed or implied.
-                FlashBidz may, in its discretion, accept returns or issue adjustments to resolve buyer disputes. Any
-                such adjustments may reduce the net proceeds payable to Consignor.</li>
-            <li>FlashBidz may cancel or void a sale if the buyer fails to pay, fails to pick up, violates terms, or if
-                there is a material error in description or pricing. In such cases the Property may be re-offered for
-                sale or disposed of as provided in this Agreement.</li>
-        </ol>
-    </div>
-
-    <div class="section">
-        <h2>4. Fees, Expenses & Ready-to-List Waivers</h2>
-        <ol>
-            <li><strong>Commission.</strong> FlashBidz will deduct the agreed commission percentage from the gross sale
-                price of each item or lot before calculating the consignor’s net proceeds.</li>
-            <li><strong>Listing / Photography / Processing Fees.</strong> FlashBidz may charge reasonable fees for
-                cataloging, photography, cleaning, testing, or other preparation of the Property. At FlashBidz’s sole
-                discretion, these fees may be reduced or <strong>waived under a Ready-to-List waiver</strong> when items
-                are delivered clean, organized, and with usable descriptions/photos.</li>
-            <li><strong>Cleanout & Marketing Fees (Estate or Full-Service).</strong> For estate or full-service
-                consignments, FlashBidz may charge separate cleanout, labor, dumpster, and/or enhanced marketing fees.
-                These fees will either (a) be paid upfront by Consignor or (b) be treated as an <strong>advance</strong>
-                and deducted from consignor proceeds. Any such fees should be outlined here or in a separate written
-                estimate:
-                <br>__________________________________________________________________________
-                <br>__________________________________________________________________________
-            </li>
-            <li><strong>Other Expenses.</strong> FlashBidz may deduct reasonable out-of-pocket expenses directly related
-                to preparing or selling the Property (for example, packing materials, credit card fees, online platform
-                fees, or required transportation) from consignor proceeds.</li>
-        </ol>
-    </div>
-
-    <div class="section">
-        <h2>5. Storage, Pick-Up, Abandoned Items & Unsold Property</h2>
-        <ol>
-            <li>FlashBidz’s buyer terms require buyers to pay in full and pick up within
-                <strong>7 days</strong> of auction close or purchase, unless otherwise stated.</li>
-            <li>After 7 days, FlashBidz may charge buyers a storage fee of
-                <strong>$2.00 per item per day</strong>. FlashBidz may keep some or all storage fees to cover handling
-                and space costs.</li>
-            <li>If a buyer fails to pay and/or pick up within <strong>14 days</strong>, the item may be considered
-                abandoned. FlashBidz may re-sell, donate, or dispose of abandoned items. Consignor understands and
-                agrees that <strong>no additional proceeds are owed on abandoned items</strong> beyond what has actually
-                been collected from any prior sale.</li>
-            <li>Unsold items may be (a) re-listed, (b) donated, or (c) returned to Consignor. The default handling for
-                unsold items (unless otherwise written below) is:
-                <br>☐ Re-list once   ☐ Donate   ☐ Return to Consignor
-                <br>Custom instructions: _________________________________________________
-            </li>
-        </ol>
-    </div>
-
-    <div class="section">
-        <h2>6. Proceeds, Statements & Payment Timing</h2>
-        <ol>
-            <li>“Net Proceeds” to Consignor equal the total amount actually collected from buyers for the Property,
-                <strong>minus</strong> (a) seller’s commission, (b) buyer’s premium retained by FlashBidz, and
-                (c) any approved fees, expenses, or advances described in this Agreement.</li>
-            <li>FlashBidz will prepare detailed statements showing items sold, prices, commissions, and deductions.
-                Statements may be provided digitally through the FlashBidz system.</li>
-            <li>Unless otherwise agreed in writing, FlashBidz will issue payment of Net Proceeds to Consignor
-                <strong>within 30 days</strong> after the later of:
-                (a) the close of the applicable auction or sale period, and
-                (b) collection of full payment from all buyers for those items.</li>
-            <li>FlashBidz may withhold or delay payment if:
-                (a) there are outstanding buyer disputes, chargebacks, or unpaid invoices;
-                (b) there is a reasonable question about title or ownership; or
-                (c) Consignor owes FlashBidz any amounts under this or any other agreement.</li>
-        </ol>
-    </div>
-
-    <div class="section">
-        <h2>7. Risk of Loss, Security & Limitation of Liability</h2>
-        <ol>
-            <li>While in FlashBidz’s possession, the Property will be handled with reasonable care. However, Consignor
-                understands that normal risks exist in storage, handling, and showing items to buyers.</li>
-            <li>Unless caused by FlashBidz’s gross negligence or intentional misconduct, FlashBidz is not responsible
-                for loss, theft, fire, water damage, or other casualty affecting the Property. In any event,
-                FlashBidz’s total liability will not exceed the expected net proceeds of the affected item(s).</li>
-            <li>Consignor is responsible for maintaining any desired insurance on the Property while in the custody of
-                FlashBidz.</li>
-        </ol>
-    </div>
-
-    <div class="section">
-        <h2>8. Real Estate Items</h2>
-        <p>
-            If any portion of this consignment involves real property (real estate), Consignor understands that those
-            transactions are governed by separate real estate auction agreements, disclosures, and closing documents.
-            In case of conflict, the real estate–specific documents control for those lots.
-        </p>
-    </div>
-
-    <div class="section">
-        <h2>9. Term, Termination & Entire Agreement</h2>
-        <ol>
-            <li>This Agreement begins on the date listed above and continues until all consigned Property has been sold,
-                returned, donated, or otherwise disposed of in accordance with these terms.</li>
-            <li>Either party may terminate this Agreement as to unsold items by giving reasonable written notice.
-                FlashBidz may charge reasonable handling or restocking fees if Consignor removes Property after work has
-                already been performed (photography, cataloging, marketing, etc.).</li>
-            <li>This Agreement (together with any written addenda, estimates, or intake forms referenced here) is the
-                entire agreement between the parties regarding the Property and supersedes prior oral or written
-                discussions.</li>
-            <li>This Agreement is governed by the laws of the State of Michigan. Any legal action shall be brought in a
-                court of competent jurisdiction in or near Kalamazoo County, Michigan, unless both parties agree
-                otherwise in writing.</li>
-        </ol>
-    </div>
-
-    <div class="section">
-        <h2>10. Additional Notes / Special Terms</h2>
-        <p style="min-height:60px;border:1px solid #ccc;padding:6px;">
-            {{ contract.notes or " " }}
-        </p>
-    </div>
-
-    <div class="signature-row">
-        <div class="sig-block">
-            <div class="sig-line"></div>
-            <div class="sig-label">Consignor Signature</div>
-
-            <div class="sig-line" style="margin-top:16px;"></div>
-            <div class="sig-label">Printed Name</div>
-
-            <div class="sig-line" style="margin-top:16px;"></div>
-            <div class="sig-label">Date</div>
-        </div>
-        <div class="sig-block">
-            <div class="sig-line"></div>
-            <div class="sig-label">Authorized FlashBidz Representative</div>
-
-            <div class="sig-line" style="margin-top:16px;"></div>
-            <div class="sig-label">Printed Name</div>
-
-            <div class="sig-line" style="margin-top:16px;"></div>
-            <div class="sig-label">Date</div>
-        </div>
-    </div>
-
-    <hr style="margin:24px 0 12px;">
-
+<div class="section">
     <h2>Items Covered by This Contract</h2>
-    <table class="items-table">
+    <table>
         <thead>
-        <tr>
-            <th>SKU</th>
-            <th>Title</th>
-            <th>Status</th>
-            <th>Asking</th>
-            <th>Sale Price</th>
-            <th>Buyer</th>
-        </tr>
+            <tr>
+                <th>SKU</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Asking</th>
+                <th>Sale Price</th>
+                <th>Notes</th>
+            </tr>
         </thead>
         <tbody>
-        {% for it in items %}
+            {% for it in items %}
             <tr>
                 <td>{{ it.sku }}</td>
                 <td>{{ it.title }}</td>
                 <td>{{ it.status }}</td>
                 <td>
                     {% if it.asking_cents is not none %}
-                        {{ (it.asking_cents / 100.0) | round(2) }}
+                        ${{ '%.2f'|format(it.asking_cents/100) }}
                     {% endif %}
                 </td>
                 <td>
-                    {% if it.sale_price_cents %}
-                        {{ (it.sale_price_cents / 100.0) | round(2) }}
+                    {% if it.sale_price_cents is not none %}
+                        ${{ '%.2f'|format(it.sale_price_cents/100) }}
                     {% endif %}
                 </td>
-                <td>{{ it.buyer_name or "" }}</td>
+                <td>{{ it.notes or '' }}</td>
             </tr>
-        {% endfor %}
-        <tr class="totals-row">
-            <td colspan="2">Totals</td>
-            <td>{{ total_items }} item(s)</td>
-            <td>{{ "%.2f"|format(total_estimated or 0) }}</td>
-            <td>{{ "%.2f"|format(total_sale_estimate or 0) }}</td>
-            <td></td>
-        </tr>
+            {% endfor %}
+            {% if not items %}
+            <tr>
+                <td colspan="6" style="text-align:center;font-style:italic;">No items currently attached to this contract.</td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
 
-    <p class="muted" style="margin-top:8px;">
-        This summary is for convenience only. If there is any discrepancy between this summary and the official
-        statements generated by the FlashBidz system, the official statements will control.
-    </p>
-
+    <div class="totals">
+        <div><span class="label">Total items:</span> {{ total_items }}</div>
+        <div><span class="label">Estimated asking total:</span> ${{ '%.2f'|format(total_estimated) }}</div>
+        <div><span class="label">Estimated sale total (if sold):</span> ${{ '%.2f'|format(total_sale_estimate) }}</div>
+        <div><span class="label">Commission rate:</span> {{ '%.0f'|format(commission_pct or 0) }}% of final sale price (unless otherwise noted).</div>
+    </div>
 </div>
+
+<div class="section terms">
+    <h2>Terms &amp; Conditions</h2>
+    <ol>
+        <li><strong>Authorization to Sell.</strong> Consignor authorizes FlashBidz LLC (“Auctioneer”) to photograph, list, market, and sell the above items through online auctions, in-store sales, or other sales channels used by FlashBidz.</li>
+
+        <li><strong>Commission &amp; Fees.</strong> For each item sold, Consignor agrees that FlashBidz will retain a commission equal to
+            {{ '%.0f'|format(commission_pct or 0) }}% of the final sale price, plus any applicable buyer’s premium, sales tax, payment processing, platform, or advertising fees retained by FlashBidz. Commission may be adjusted in writing on a per-consignor or per-item basis.</li>
+
+        <li><strong>Payment to Consignor.</strong> Net proceeds (after commission, fees, chargebacks, and returns) will be paid to Consignor within 30 days after the close of the auction or sale in which the items are paid in full, subject to cleared funds.</li>
+
+        <li><strong>Title &amp; Authenticity.</strong> Consignor represents and warrants that they are the lawful owner of the items or authorized to sell them, that items are free of liens and encumbrances, and that any brand, autograph, or authenticity claims are true to the best of their knowledge.</li>
+
+        <li><strong>Condition, Inspection &amp; “As-Is” Sale.</strong> All items are sold “AS-IS, WHERE-IS,” with no guarantees by FlashBidz regarding condition, fitness, or completeness. Descriptions and photos are provided as a good-faith guide only and may not capture every detail. Bidders are encouraged to inspect items in person prior to bidding.</li>
+
+        <li><strong>Unsold Items &amp; Storage.</strong> Unless otherwise agreed in writing, Consignor must pick up unsold items within 7 calendar days after being notified that the auction or sale is complete. After 7 days, a storage fee of $2.00 per item per day may be charged. After 14 days, any remaining items may be considered abandoned and may be donated, disposed of, or sold at the sole discretion of FlashBidz, with no further proceeds due to Consignor.</li>
+
+        <li><strong>Loss or Damage.</strong> Reasonable care will be used in handling and storing items; however, Consignor understands that minor handling wear may occur in the normal course of photographing, moving, and showing items. FlashBidz is not liable for damage or loss caused by events outside its reasonable control (including theft, fire, water damage, or acts of nature) beyond any insurance actually recovered.</li>
+
+        <li><strong>Pricing &amp; Sale Method.</strong> FlashBidz has discretion to lot, describe, photograph, start bids, group items, run sales multiple times, and choose the sales channel(s) that it believes will best promote the items, unless specific written instructions are agreed and attached to this contract.</li>
+
+        <li><strong>Chargebacks &amp; Non-Payment.</strong> If a buyer fails to pay, cancels, or reverses payment, FlashBidz may cancel the sale, re-offer the item, or return the item to Consignor. No commission will be paid on cancelled or unpaid sales.</li>
+
+        <li><strong>Term; Locked Contracts.</strong> This contract covers the items listed while the status is “Draft.” When signed below and marked “Locked” in the FlashBidz system, the contract is finalized for those items. New items will be placed on a new, separate contract.</li>
+
+        <li><strong>Entire Agreement.</strong> This agreement, plus any written addenda attached hereto, constitutes the entire agreement between the parties regarding the consignment of these items and supersedes any prior verbal agreements.</li>
+    </ol>
+</div>
+
+<div class="signature-blocks">
+    <div class="sig-box">
+        <div class="label">Consignor</div>
+        <div class="sig-line"></div>
+        <div>Signature</div>
+        <div class="sig-line"></div>
+        <div>Printed Name</div>
+        <div class="sig-line"></div>
+        <div>Date</div>
+    </div>
+    <div class="sig-box">
+        <div class="label">FlashBidz Representative</div>
+        <div class="sig-line"></div>
+        <div>Signature</div>
+        <div class="sig-line"></div>
+        <div>Printed Name</div>
+        <div class="sig-line"></div>
+        <div>Date</div>
+    </div>
+</div>
+
+{% if contract.status != "locked" and session.get('role') == 'admin' %}
+<form method="post" action="{{ url_for('contract_lock', contract_id=contract.id) }}" class="no-print" style="margin-top:16px;">
+    <button type="submit" style="background:#e60000;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;">
+        Mark Contract as Locked (Signed)
+    </button>
+</form>
+{% endif %}
+
 </body>
 </html>
