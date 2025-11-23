@@ -2450,7 +2450,25 @@ def add_no_cache_headers(response):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
+@app.get("/admin/upgrade/sales_channels")
+def upgrade_sales_channels():
+    maybe = _require_admin()
+    if maybe:
+        return maybe
 
+    from sqlalchemy import text
+    with db.engine.begin() as conn:
+        conn.execute(text(
+            "ALTER TABLE consignors ADD COLUMN IF NOT EXISTS sell_at_auction BOOLEAN DEFAULT TRUE"
+        ))
+        conn.execute(text(
+            "ALTER TABLE consignors ADD COLUMN IF NOT EXISTS sell_in_store BOOLEAN DEFAULT FALSE"
+        ))
+        conn.execute(text(
+            "ALTER TABLE consignors ADD COLUMN IF NOT EXISTS sell_on_ebay BOOLEAN DEFAULT FALSE"
+        ))
+    return "OK – sales channel columns added (or already existed)."
+    
 # ✅ ALWAYS run on import (local + Render)
 with app.app_context():
     db.create_all()
