@@ -3,7 +3,22 @@
 <main class="page">
 
   <h1>Consignor: {{ consignor.name }}</h1>
+{% set contract_id = None %}
+{% for it in items %}
+  {% if it.contract_id %}
+    {% set contract_id = it.contract_id %}
+  {% endif %}
+{% endfor %}
 
+{% if contract_id %}
+  <p>
+    <a href="{{ url_for('contract_view', contract_id=contract_id) }}"
+       style="display:inline-block;padding:8px 14px;background:#111;
+              color:#fff;text-decoration:none;border-radius:4px">
+      View Current Contract
+    </a>
+  </p>
+{% endif %}
   <p style="margin-top: 4px; color: #666;">
     Email: {{ consignor.email or "-" }} ·
     Phone: {{ consignor.phone or "-" }} ·
