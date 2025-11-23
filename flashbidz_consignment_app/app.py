@@ -334,7 +334,10 @@ class Consignor(db.Model):
     commission_pct = db.Column(db.Float, default=0.0)        # e.g., 35.0 means 35%
     advance_balance = db.Column(db.Integer, default=0)       # store cents; negative or positive
     license_image = db.Column(db.String(255))  # path to driver's license image
-# --- One-time safe schema tweaks for Consignor (Postgres) ---
+    # ✅ NEW – which channels this consignor allows
+    sell_at_auction = db.Column(db.Boolean, default=True)
+    sell_in_store   = db.Column(db.Boolean, default=False)
+    sell_on_ebay    = db.Column(db.Boolean, default=False)# --- One-time safe schema tweaks for Consignor (Postgres) ---
 with app.app_context():
     # These are safe to run multiple times thanks to IF NOT EXISTS
     db.session.execute(text("""
@@ -1803,7 +1806,10 @@ def consignor_create():
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
         license_file = request.files.get("license_image")
-
+        # ✅ Sales channel checkboxes
+        sell_at_auction = bool(request.form.get("sell_at_auction"))
+        sell_in_store   = bool(request.form.get("sell_in_store"))
+        sell_on_ebay    = bool(request.form.get("sell_on_ebay"))
         # Commission %
         try:
             commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
@@ -1833,6 +1839,9 @@ def consignor_create():
             commission_pct=commission_pct,
             advance_balance=advance_balance,
             license_image=None,
+            sell_at_auction=sell_at_auction,   # ✅
+            sell_in_store=sell_in_store,       # ✅
+            sell_on_ebay=sell_on_ebay,         # ✅
         )
         db.session.add(c)
         db.session.commit()  # now c.id is available
@@ -1886,7 +1895,10 @@ def consignors_edit(cid):
 
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
-
+        # ✅ Update sales channel permissions
+        c.sell_at_auction = bool(request.form.get("sell_at_auction"))
+        c.sell_in_store   = bool(request.form.get("sell_in_store"))
+        c.sell_on_ebay    = bool(request.form.get("sell_on_ebay"))
         try:
             c.commission_pct = float(commission_pct_raw) if commission_pct_raw else 0.0
         except ValueError:
