@@ -853,7 +853,10 @@ def items_list():
 @require_perm("items:add")
 @app.get("/items/new")
 def item_new():
-    return render_template("item_form.html", item=None)
+    # All consignors for the dropdown
+    consignors = Consignor.query.order_by(Consignor.name.asc()).all()
+    return render_template("item_form.html", item=None, consignors=consignors)
+
 @app.template_filter("money")
 def money(cents):
     if cents is None:
@@ -973,7 +976,8 @@ def parse_date(s):
 @app.get("/items/<int:item_id>/edit")
 def item_edit(item_id):
     item = Item.query.get_or_404(item_id)
-    return render_template("item_form.html", item=item)
+    consignors = Consignor.query.order_by(Consignor.name.asc()).all()
+    return render_template("item_form.html", item=item, consignors=consignors)
 
 @require_perm("items:edit")
 @app.post("/items/<int:item_id>/edit")
