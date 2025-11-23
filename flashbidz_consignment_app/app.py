@@ -334,7 +334,27 @@ class Consignor(db.Model):
     commission_pct = db.Column(db.Float, default=0.0)        # e.g., 35.0 means 35%
     advance_balance = db.Column(db.Integer, default=0)       # store cents; negative or positive
     license_image = db.Column(db.String(255))  # path to driver's license image
-
+# --- One-time safe schema tweaks for Consignor (Postgres) ---
+with app.app_context():
+    # These are safe to run multiple times thanks to IF NOT EXISTS
+    db.session.execute(text("""
+        ALTER TABLE consignors
+        ADD COLUMN IF NOT EXISTS street VARCHAR(240);
+    """))
+    db.session.execute(text("""
+        ALTER TABLE consignors
+        ADD COLUMN IF NOT EXISTS city VARCHAR(120);
+    """))
+    db.session.execute(text("""
+        ALTER TABLE consignors
+        ADD COLUMN IF NOT EXISTS state VARCHAR(40);
+    """))
+    db.session.execute(text("""
+        ALTER TABLE consignors
+        ADD COLUMN IF NOT EXISTS postal_code VARCHAR(20);
+    """))
+    db.session.commit()
+    
 class Supplier(db.Model):
     __tablename__ = "suppliers"
     id = db.Column(db.Integer, primary_key=True)
@@ -1761,10 +1781,14 @@ def consignors_export():
 @require_perm("consignors_edit")
 def consignor_create():
     if request.method == "POST":
-        name = (request.form.get("name") or "").strip()
-        email = (request.form.get("email") or "").strip() or None
-        phone = (request.form.get("phone") or "").strip() or None
-        notes = request.form.get("notes") or None
+        name   = (request.form.get("name")   or "").strip()
+        email  = (request.form.get("email")  or "").strip() or None
+        phone  = (request.form.get("phone")  or "").strip() or None
+        street = (request.form.get("street") or "").strip() or None
+        city   = (request.form.get("city")   or "").strip() or None
+        state  = (request.form.get("state")  or "").strip() or None
+        postal = (request.form.get("postal_code") or "").strip() or None
+        notes  = request.form.get("notes") or None
 
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
@@ -1791,6 +1815,10 @@ def consignor_create():
             name=name,
             email=email,
             phone=phone,
+            street=street,
+            city=city,
+            state=state,
+            postal_code=postal,
             notes=notes,
             commission_pct=commission_pct,
             advance_balance=advance_balance,
@@ -1828,10 +1856,23 @@ def consignors_edit(cid):
     c = Consignor.query.get_or_404(cid)
 
     if request.method == "POST":
-        name = (request.form.get("name") or "").strip()
-        email = (request.form.get("email") or "").strip() or None
-        phone = (request.form.get("phone") or "").strip() or None
-        notes = request.form.get("notes") or None
+        name   = (request.form.get("name")   or "").strip()
+        email  = (request.form.get("email")  or "").strip() or None
+        phone  = (request.form.get("phone")  or "").strip() or None
+        street = (request.form.get("street") or "").strip() or None
+        city   = (request.form.get("city")   or "").strip() or None
+        state  = (request.form.get("state")  or "").strip() or None
+        postal = (request.form.get("postal_code") or "").strip() or None
+        notes  = request.form.get("notes") or None
+        ...
+        c.name        = name
+        c.email       = email
+        c.phone       = phone
+        c.street      = street
+        c.city        = city
+        c.state       = state
+        c.postal_code = postal
+        c.notes       = notes
 
         commission_pct_raw = (request.form.get("commission_pct") or "").strip()
         advance_balance_raw = (request.form.get("advance_balance") or "").strip()
