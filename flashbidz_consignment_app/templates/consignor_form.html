@@ -92,23 +92,6 @@
         placeholder="Optional – e.g. 'Photo in Google Drive, folder XYZ'"
         value="{{ consignor.license_image if consignor else '' }}"
       />
-<div class="form-row">
-    <label for="name">Name*</label>
-    <input type="text" name="name" id="name"
-           value="{{ consignor.name if consignor else '' }}" required>
-</div>
-
-<div class="form-row">
-    <label for="email">Email</label>
-    <input type="email" name="email" id="email"
-           value="{{ consignor.email if consignor else '' }}">
-</div>
-
-<div class="form-row">
-    <label for="phone">Phone</label>
-    <input type="text" name="phone" id="phone"
-           value="{{ consignor.phone if consignor else '' }}">
-</div>
 
 <!-- NEW: Address fields -->
 <div class="form-row">
