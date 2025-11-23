@@ -25,10 +25,29 @@
       <label>Title</label>
       <input name="title" required value="{{ item.title if item else '' }}"/>
 
-      <div class="row">
-        <div>
-          <label>Ownership</label>
-          <select name="ownership">
+      <div class="form-row">
+    <label for="ownership">Ownership</label>
+    <select name="ownership" id="ownership">
+        <option value="owned"
+            {% if (item and item.ownership == 'owned') or not item %}
+                selected
+            {% endif %}>
+            FlashBidz Owned
+        </option>
+        <option value="consigned"
+            {% if item and item.ownership == 'consigned' %}
+                selected
+            {% endif %}>
+            Consigned (payout to consignor)
+        </option>
+        <option value="internal"
+            {% if item and item.ownership == 'internal' %}
+                selected
+            {% endif %}>
+            Internal (Jason / Jennifer / staff)
+        </option>
+    </select>
+</div>
           <label>Supplier (name)</label>
           <input name="supplier" value="{{ (item.supplier or '') if item else '' }}">
 
@@ -58,17 +77,54 @@
         </div>
       </div>
 
-      <div class="row">
-        <div>
-          <label>Consignor (if consigned)</label>
-          <input name="consignor" value="{{ item.consignor or '' }}"/>
-        </div>
+     <div class="form-row" id="consignor-row">
+    <label for="consignor">Consignor (if consigned)</label>
+    <select name="consignor" id="consignor">
+        <option value="">-- None / House Owned --</option>
+        {% for c in consignors %}
+            <option value="{{ c.name }}"
+                {% if item and item.consignor == c.name %}
+                    selected
+                {% endif %}>
+                {{ c.name }}
+            </option>
+        {% endfor %}
+    </select>
+    <small style="color:#666;display:block;margin-top:4px;">
+        Only used when Ownership is set to “Consigned”.
+    </small>
+</div>
         <div>
           <label>Notes</label>
           <input name="notes" value="{{ item.notes or '' }}"/>
         </div>
       </div>
+<script>
+  function toggleConsignorRow() {
+    const ownership = document.getElementById("ownership");
+    const consignorRow = document.getElementById("consignor-row");
+    if (!ownership || !consignorRow) return;
 
+    const val = ownership.value.toLowerCase();
+    // Only show when consigned
+    if (val === "consigned") {
+      consignorRow.style.display = "";
+    } else {
+      consignorRow.style.display = "none";
+      // Optional: clear selection when not consigned
+      const sel = document.getElementById("consignor");
+      if (sel) sel.value = "";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const ownership = document.getElementById("ownership");
+    if (ownership) {
+      ownership.addEventListener("change", toggleConsignorRow);
+      toggleConsignorRow(); // set initial state
+    }
+  });
+</script>
       <div class="actions">
         <button class="btn" type="submit">Save</button>
         <a class="btn-light" href="/items">Cancel</a>
