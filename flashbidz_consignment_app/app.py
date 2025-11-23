@@ -604,6 +604,7 @@ def _auto_fill_after_insert(mapper, connection, target):
 
 # Wire relationships AFTER both classes are defined
 from sqlalchemy.orm import relationship
+
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)  # always 1
     brand_name = db.Column(db.String(120), default="FlashBidz")
@@ -625,7 +626,11 @@ def get_settings():
         db.session.add(s)
         db.session.commit()
     return s
-
+@app.context_processor
+def inject_settings():
+    return {
+        "get_settings": lambda: Settings.query.get(1)
+    }
 class Sale(db.Model):
     __tablename__ = "sales"
 
