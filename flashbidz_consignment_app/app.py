@@ -338,9 +338,10 @@ class Consignor(db.Model):
     sell_at_auction = db.Column(db.Boolean, default=True)
     sell_in_store   = db.Column(db.Boolean, default=False)
     sell_on_ebay    = db.Column(db.Boolean, default=False)# --- One-time safe schema tweaks for Consignor (Postgres) ---
-# --- One-time safe schema tweaks for Consignor (Postgres) ---
+
+# --- One-time safe schema tweaks for Consignor + Items (Postgres) ---
 with app.app_context():
-    # Consignor address fields
+    # These are safe to run multiple times thanks to IF NOT EXISTS
     db.session.execute(text("""
         ALTER TABLE consignors
         ADD COLUMN IF NOT EXISTS street VARCHAR(240);
@@ -357,6 +358,14 @@ with app.app_context():
         ALTER TABLE consignors
         ADD COLUMN IF NOT EXISTS postal_code VARCHAR(20);
     """))
+
+    # ✅ New: item location column
+    db.session.execute(text("""
+        ALTER TABLE items
+        ADD COLUMN IF NOT EXISTS location VARCHAR(120);
+    """))
+
+    db.session.commit()
 
     # ✅ NEW: location fields on items
     db.session.execute(text("""
