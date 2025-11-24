@@ -2572,7 +2572,29 @@ def upgrade_sales_channels():
             "ALTER TABLE consignors ADD COLUMN IF NOT EXISTS sell_on_ebay BOOLEAN DEFAULT FALSE"
         ))
     return "OK – sales channel columns added (or already existed)."
-    
+
+@app.get("/admin/upgrade/item_locations")
+def upgrade_item_locations():
+    maybe = _require_admin()
+    if maybe:
+        return maybe
+
+    from sqlalchemy import text
+    with db.engine.begin() as conn:
+        conn.execute(text(
+            "ALTER TABLE items ADD COLUMN IF NOT EXISTS building VARCHAR(80)"
+        ))
+        conn.execute(text(
+            "ALTER TABLE items ADD COLUMN IF NOT EXISTS room VARCHAR(80)"
+        ))
+        conn.execute(text(
+            "ALTER TABLE items ADD COLUMN IF NOT EXISTS shelf VARCHAR(80)"
+        ))
+        conn.execute(text(
+            "ALTER TABLE items ADD COLUMN IF NOT EXISTS tote VARCHAR(80)"
+        ))
+    return "OK – item location columns added (or already existed)."    
+
 # ✅ ALWAYS run on import (local + Render)
 with app.app_context():
     db.create_all()
