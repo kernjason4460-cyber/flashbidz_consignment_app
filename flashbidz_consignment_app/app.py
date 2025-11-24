@@ -338,8 +338,9 @@ class Consignor(db.Model):
     sell_at_auction = db.Column(db.Boolean, default=True)
     sell_in_store   = db.Column(db.Boolean, default=False)
     sell_on_ebay    = db.Column(db.Boolean, default=False)# --- One-time safe schema tweaks for Consignor (Postgres) ---
+# --- One-time safe schema tweaks for Consignor (Postgres) ---
 with app.app_context():
-    # These are safe to run multiple times thanks to IF NOT EXISTS
+    # Consignor address fields
     db.session.execute(text("""
         ALTER TABLE consignors
         ADD COLUMN IF NOT EXISTS street VARCHAR(240);
@@ -356,6 +357,25 @@ with app.app_context():
         ALTER TABLE consignors
         ADD COLUMN IF NOT EXISTS postal_code VARCHAR(20);
     """))
+
+    # ✅ NEW: location fields on items
+    db.session.execute(text("""
+        ALTER TABLE items
+        ADD COLUMN IF NOT EXISTS location_building VARCHAR(80);
+    """))
+    db.session.execute(text("""
+        ALTER TABLE items
+        ADD COLUMN IF NOT EXISTS location_room VARCHAR(80);
+    """))
+    db.session.execute(text("""
+        ALTER TABLE items
+        ADD COLUMN IF NOT EXISTS location_shelf VARCHAR(80);
+    """))
+    db.session.execute(text("""
+        ALTER TABLE items
+        ADD COLUMN IF NOT EXISTS location_tote VARCHAR(80);
+    """))
+
     db.session.commit()
     
 class Supplier(db.Model):
@@ -435,7 +455,23 @@ class Item(db.Model):
 
     # Misc
     notes = db.Column(db.Text)
+    # Location (for warehouse / room / shelf / tote)
+    location_building = db.Column(db.String(80))  # e.g., WH1, Store, Garage
+    location_room     = db.Column(db.String(80))  # e.g., Back Room, Aisle 3
+    location_shelf    = db.Column(db.String(80))  # e.g., Shelf 2, Rack B
+    location_tote     = db.Column(db.String(80))  # e.g., Tote 14, Bin C
 
+    @property
+    def location_display(self):
+        """Nice one-line version: 'Store / Back Room / Shelf 2 / Tote 14'."""
+        parts = [
+            self.location_building,
+            self.location_room,
+            self.location_shelf,
+            self.location_tote,
+        ]
+        parts = [p for p in parts if p]
+        return " / ".join(parts)
     # Relationship
     supplier_ref = db.relationship("Supplier", backref="items", lazy="joined")
 
