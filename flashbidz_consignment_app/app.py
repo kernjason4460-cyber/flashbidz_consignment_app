@@ -921,6 +921,12 @@ def item_create():
     cost_cents = to_cents(request.form.get("cost"))
     asking_cents = to_cents(request.form.get("asking"))
 
+    # Location fields
+    building = (request.form.get("building") or "").strip() or None
+    room     = (request.form.get("room") or "").strip() or None
+    shelf    = (request.form.get("shelf") or "").strip() or None
+    tote     = (request.form.get("tote") or "").strip() or None
+
     # Other optional fields
     notes          = (request.form.get("notes") or "").strip() or None
     consignor_name = (request.form.get("consignor") or "").strip() or None
@@ -961,7 +967,6 @@ def item_create():
     # ---- Auto-create / reuse consignment contract for this consignor ----
     contract = None
     if ownership == "consigned" and consignor_id:
-        # Try helper if it exists
         if hasattr(Contract, "get_open_contract"):
             contract = Contract.get_open_contract(consignor_id)
         else:
@@ -1003,6 +1008,10 @@ def item_create():
         notes=notes,
         sale_date=sale_date,
         contract_id=contract.id if contract else None,
+        building=building,
+        room=room,
+        shelf=shelf,
+        tote=tote,
     )
 
     db.session.add(item)
@@ -1021,7 +1030,7 @@ def item_edit(item_id):
 
     # Re-use the same form template as "New Item"
     return render_template("item_form.html", item=item, consignors=consignors)
-    
+   
 @require_perm("items:edit")
 @app.post("/items/<int:item_id>/edit")
 def item_update(item_id):
@@ -1044,10 +1053,17 @@ def item_update(item_id):
     ownership = (request.form.get("ownership") or "owned").strip().lower()
     item.ownership = ownership
 
-    item.category = (request.form.get("category") or "").strip() or None
-    item.cost_cents = dollars_to_cents(request.form.get("cost"))
-    item.asking_cents = dollars_to_cents(request.form.get("asking"))
+    item.category      = (request.form.get("category") or "").strip() or None
+    item.cost_cents    = dollars_to_cents(request.form.get("cost"))
+    item.asking_cents  = dollars_to_cents(request.form.get("asking"))
 
+    # Location fields
+    item.building = (request.form.get("building") or "").strip() or None
+    item.room     = (request.form.get("room") or "").strip() or None
+    item.shelf    = (request.form.get("shelf") or "").strip() or None
+    item.tote     = (request.form.get("tote") or "").strip() or None
+
+    # Notes
     notes = (request.form.get("notes") or "").strip()
     item.notes = notes or None
 
@@ -1100,7 +1116,6 @@ def item_update(item_id):
     db.session.commit()
     flash("Item updated")
     return redirect(url_for("items_list"))
-
 
 @require_perm("items:delete")
 @app.post("/items/<int:item_id>/delete")
