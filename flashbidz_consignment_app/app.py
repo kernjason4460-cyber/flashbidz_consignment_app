@@ -878,7 +878,7 @@ def item_create():
 
     # Basic fields
     title = (request.form.get("title") or "").strip()
-    category = (request.form.get("category") or "").strip()
+    category = (request.form.get("category") or "").strip() or None
     ownership = (request.form.get("ownership") or "owned").strip().lower()
 
     # Money fields (stored as cents)
@@ -886,7 +886,7 @@ def item_create():
     asking_cents = to_cents(request.form.get("asking"))
 
     # Other optional fields
-    notes          = (request.form.get("notes") or "").strip()
+    notes          = (request.form.get("notes") or "").strip() or None
     consignor_name = (request.form.get("consignor") or "").strip() or None
     supplier_name  = (request.form.get("supplier") or "").strip() or None
     sale_date_str  = (request.form.get("sale_date") or "").strip() or None
@@ -897,17 +897,20 @@ def item_create():
     # Use provided SKU if present, otherwise auto-generate
     sku = (request.form.get("sku") or "").strip()
     if not sku:
-        sku = next_sku()  # next_sku() must be defined below Item class
+        sku = next_sku()
 
     # Resolve consignor_name -> consignor_id (optional)
     consignor_id = None
+    consignor_obj = None
     if consignor_name:
-        c = Consignor.query.filter(Consignor.name.ilike(consignor_name)).first()
-        if not c:
-            c = Consignor(name=consignor_name)
-            db.session.add(c)
-            db.session.flush()  # get c.id without a separate commit
-        consignor_id = c.id
+        consignor_obj = Consignor.query.filter(
+            Consignor.name.ilike(consignor_name)
+        ).first()
+        if not consignor_obj:
+            consignor_obj = Consignor(name=consignor_name)
+            db.session.add(consignor_obj)
+            db.session.flush()
+        consignor_id = consignor_obj.id
 
     # Resolve supplier_name -> supplier_id (optional)
     supplier_id = None
@@ -921,26 +924,34 @@ def item_create():
 
     # ---- Auto-create / reuse consignment contract for this consignor ----
     contract = None
-    if consignor_id:
-        # Try to reuse the latest draft contract for this consignor
-        contract = (
-            Contract.query
-            .filter_by(consignor_id=consignor_id, status="draft")
-            .order_by(Contract.id.desc())
-            .first()
-        )
+    if ownership == "consigned" and consignor_id:
+        # Try helper if it exists
+        if hasattr(Contract, "get_open_contract"):
+            contract = Contract.get_open_contract(consignor_id)
+        else:
+            contract = (
+                Contract.query
+                .filter_by(consignor_id=consignor_id, status="draft")
+                .order_by(Contract.id.desc())
+                .first()
+            )
 
         if not contract:
-            # No open contract – start a new one
             contract = Contract(
                 consignor_id=consignor_id,
                 created_at=datetime.utcnow().isoformat(timespec="seconds"),
                 status="draft",
             )
             db.session.add(contract)
-            db.session.flush()  # get contract.id without separate commit
+            db.session.flush()
 
-    # Create the item (now linked to consignor + contract)
+    # If this is NOT consigned, we do not tie it to a consignor/contract
+    if ownership != "consigned":
+        consignor_name = None
+        consignor_id = None
+        contract = None
+
+    # Create the item (linked to consignor + contract if applicable)
     item = Item(
         sku=sku,
         title=title,
@@ -949,7 +960,7 @@ def item_create():
         cost_cents=cost_cents,
         asking_cents=asking_cents,
         status="available",
-        consignor=consignor_name,              # show name in table
+        consignor=consignor_name,
         consignor_id=consignor_id,
         supplier=supplier_name,
         supplier_id=supplier_id,
@@ -962,40 +973,82 @@ def item_create():
     db.session.commit()
     flash("Item created.", "success")
     return redirect(url_for("items_list"))
-def parse_date(s):
-    if not s: return None
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"):
-        try:
-            return datetime.strptime(s, fmt).date()
-        except Exception:
-            pass
-    return None
-
-@require_perm("items:edit")
-@app.get("/items/<int:item_id>/edit")
-def item_edit(item_id):
-    item = Item.query.get_or_404(item_id)
-    consignors = Consignor.query.order_by(Consignor.name.asc()).all()
-    return render_template("item_form.html", item=item, consignors=consignors)
 
 @require_perm("items:edit")
 @app.post("/items/<int:item_id>/edit")
 def item_update(item_id):
-    ...
     item = Item.query.get_or_404(item_id)
 
     def dollars_to_cents(val):
+        val = (val or "").strip()
+        if not val:
+            return None
         try:
             return int(round(float(val) * 100))
-        except BaseException:
+        except Exception:
             return None
-    item.title = request.form.get("title", "").strip() or item.title
-    item.ownership = request.form.get("ownership", "owned").strip()
-    item.category = request.form.get("category", "").strip() or None
-    item.cost_cents = dollars_to_cents(request.form.get("cost", ""))
-    item.asking_cents = dollars_to_cents(request.form.get("asking", ""))
-    item.consignor = request.form.get("consignor", "").strip() or None
-    item.notes = request.form.get("notes", "").strip() or None
+
+    # Basic fields
+    title = (request.form.get("title") or "").strip()
+    if title:
+        item.title = title
+
+    ownership = (request.form.get("ownership") or "owned").strip().lower()
+    item.ownership = ownership
+
+    item.category = (request.form.get("category") or "").strip() or None
+    item.cost_cents = dollars_to_cents(request.form.get("cost"))
+    item.asking_cents = dollars_to_cents(request.form.get("asking"))
+
+    notes = (request.form.get("notes") or "").strip()
+    item.notes = notes or None
+
+    # Consignor selection from dropdown
+    consignor_name = (request.form.get("consignor") or "").strip() or None
+    item.consignor = consignor_name
+
+    consignor_id = None
+    contract = None
+
+    if ownership == "consigned" and consignor_name:
+        # Look up or create consignor
+        c = Consignor.query.filter(
+            Consignor.name.ilike(consignor_name)
+        ).first()
+        if not c:
+            c = Consignor(name=consignor_name)
+            db.session.add(c)
+            db.session.flush()
+        consignor_id = c.id
+        item.consignor_id = consignor_id
+
+        # Open (or create) draft contract
+        if hasattr(Contract, "get_open_contract"):
+            contract = Contract.get_open_contract(consignor_id)
+        else:
+            contract = (
+                Contract.query
+                .filter_by(consignor_id=consignor_id, status="draft")
+                .order_by(Contract.id.desc())
+                .first()
+            )
+
+        if not contract:
+            contract = Contract(
+                consignor_id=consignor_id,
+                created_at=datetime.utcnow().isoformat(timespec="seconds"),
+                status="draft",
+            )
+            db.session.add(contract)
+            db.session.flush()
+
+        item.contract_id = contract.id
+
+    else:
+        # Not consigned anymore → clear links
+        item.consignor_id = None
+        item.contract_id = None
+
     db.session.commit()
     flash("Item updated")
     return redirect(url_for("items_list"))
