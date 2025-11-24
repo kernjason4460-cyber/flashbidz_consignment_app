@@ -1,18 +1,3 @@
-<form method="get" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
-  <input name="s" value="{{ s or '' }}" placeholder="Search title / SKU / notes" style="flex:1;min-width:220px">
-  <select name="status">
-    <option value="">(status)</option>
-    <option value="available" {% if status=='available' %}selected{% endif %}>available</option>
-    <option value="sold" {% if status=='sold' %}selected{% endif %}>sold</option>
-  </select>
-  <select name="ownership">
-    <option value="">(ownership)</option>
-    <option value="owned" {% if ownership=='owned' %}selected{% endif %}>owned</option>
-    <option value="consigned" {% if ownership=='consigned' %}selected{% endif %}>consigned</option>
-  </select>
-  <input name="category" value="{{ category or '' }}" placeholder="Category">
-  <button type="submit">Filter</button>
-</form>
 <!doctype html>
 <html>
 <head>
@@ -20,163 +5,291 @@
   <title>Items - FlashBidz</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
-    main { padding:24px; max-width:1200px; margin:0 auto; }
-    h1 { margin:0 0 16px; }
-    .filters { display:flex; gap:10px; align-items:center; margin-bottom:16px; }
-    select { padding:8px; border-radius:8px; border:1px solid #ddd; }
-    .btn { padding:8px 10px; border-radius:8px; text-decoration:none; background:#e60000; color:#fff; font-weight:700; }
-    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
-    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
-    th { background:#fafafa; font-weight:700; }
-    .btn-light { background:#eee; color:#222; font-weight:600; padding:6px 8px; border-radius:8px; text-decoration:none; }
-    .row-actions form { display:inline; }
-    /* Status pill badges */
-    .status-pill {
-      display:inline-block;
-      padding:3px 8px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:600;
-      text-transform:uppercase;
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      margin: 0;
+      background: #f6f7f9;
+      color: #111;
+    }
+    main {
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0 0 12px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .toolbar input[type="text"],
+    .toolbar input[type="date"],
+    .toolbar select {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      min-width: 180px;
+    }
+    .toolbar button,
+    .toolbar a.btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .toolbar button {
+      background: #e60000;
+      color: #fff;
+    }
+    .toolbar a.btn {
+      background: #eee;
+      color: #333;
     }
 
-    .status-available {
-      background:#e6ffe6;
-      color:#205c20;
+    .summary {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      font-size: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .summary span.label {
+      font-weight: 600;
     }
 
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0,0,0,.06);
+      font-size: 14px;
+    }
+    thead {
+      background: #111;
+      color: #fff;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    th {
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody tr:nth-child(even) {
+      background: #fafafa;
+    }
+    tbody tr:hover {
+      background: #f0f4ff;
+    }
     .status-sold {
-      background:#ffe6e6;
-      color:#7a1010;
+      color: #0a7b16;
+      font-weight: 600;
+    }
+    .status-available {
+      color: #c97a00;
+      font-weight: 600;
+    }
+    .status-internal {
+      color: #555;
+      font-weight: 600;
+    }
+    .ownership-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .own-owned    { background:#e0f2ff; color:#074a84; }
+    .own-consigned{ background:#e1ffe5; color:#106b24; }
+    .own-internal { background:#f5e0ff; color:#6b118d; }
+
+    .actions a {
+      display: inline-block;
+      margin-right: 6px;
+      font-size: 12px;
+      text-decoration: none;
+      color: #0b63ce;
+    }
+    .actions a.danger {
+      color: #c00000;
     }
 
-    .status-pending {
-      background:#fff7d9;
-      color:#7a5a00;
+    tfoot td {
+      font-weight: 600;
+      background: #f3f4f6;
     }
 
-    /* Row highlights */
-    tbody tr.row-sold {
-      background:#fff3f3;
-    }
-
-    tbody tr.row-pending {
-      background:#fffbe6;
+    @media (max-width: 900px) {
+      table, thead, tbody, th, td, tr {
+        font-size: 12px;
+      }
+      th, td {
+        padding: 6px 6px;
+      }
     }
   </style>
 </head>
 <body>
   {% include "_navbar.html" %}
   <main>
-    <h1>Items</h1>
-{% if consignor_id %}
-  <p style="margin-top: 4px; color: #666;">
-    Showing items for consignor ID {{ consignor_id }}.
-    <a href="{{ url_for('items_list') }}">Show all items</a>
-  </p>
-{% endif %}
-<p><a class="btn" href="/items/new">+ New Item</a></p>
+    <h1>Inventory</h1>
 
+    <!-- Filter / search bar -->
+    <form method="get" class="toolbar">
+      <input
+        type="text"
+        name="q"
+        placeholder="Search by title, SKU, buyer, consignor..."
+        value="{{ request.args.get('q','') }}"
+      >
+      <button type="submit">Filter</button>
+      <a href="/items" class="btn">Clear</a>
+      <a href="/items/new" class="btn" style="margin-left:auto;background:#e60000;color:#fff;">
+        + Add Item
+      </a>
+    </form>
+
+    <!-- Totals summary -->
+    {% if totals %}
+    <div class="summary">
+      <div><span class="label">Total Cost:</span>
+        ${{ "%.2f"|format(totals.cost) }}</div>
+      <div><span class="label">Total Sales:</span>
+        ${{ "%.2f"|format(totals.sales) }}</div>
+      <div><span class="label">Profit (Owned):</span>
+        ${{ "%.2f"|format(totals.profit) }}</div>
+      <div><span class="label">Consignor Payouts:</span>
+        ${{ "%.2f"|format(totals.consignor / 100.0) }}</div>
+      <div><span class="label">House Net:</span>
+        ${{ "%.2f"|format(totals.house / 100.0) }}</div>
+    </div>
+    {% endif %}
 
     <table>
       <thead>
         <tr>
-          <th>ID</th>
           <th>SKU</th>
           <th>Title</th>
           <th>Ownership</th>
+          <th>Consignor</th>
           <th>Category</th>
           <th>Cost</th>
           <th>Asking</th>
           <th>Status</th>
           <th>Sale Price</th>
-          <th>Sale Date</th>
-          <th>Consignor</th>
-          <th>Contract</th>
           <th>Buyer</th>
-          <th></th>
+          <!-- 🔹 NEW LOCATION COLUMNS -->
+          <th>Building</th>
+          <th>Room</th>
+          <th>Shelf</th>
+          <th>Tote</th>
+          <th>Created</th>
+          <th>Actions</th>
         </tr>
       </thead>
-       <tbody>
-    {% for it in items %}
-      <tr>
-        <td>{{ it.id }}</td>
-        <td>{{ it.sku }}</td>
-        <td>{{ it.title }}</td>
-        <td>{{ it.ownership }}</td>
-        <td>{{ it.category or '' }}</td>
-        <td>${{ '%.2f'|format(it.cost) }}</td>
-        <td>
-            {% if it.asking_cents %}
-                ${{ '%.2f' | format(it.asking_cents / 100) }}
-            {% else %}
-                —
-            {% endif %}
-        </td>
+      <tbody>
+        {% if items %}
+          {% for it in items %}
+          <tr>
+            <td>{{ it.sku }}</td>
+            <td>{{ it.title }}</td>
 
-        <td>{{ it.status }}</td>
-        <td>
-          {% if it.sale_price_cents %}
-            ${{ '%.2f'|format(it.sale_price) }}
-          {% endif %}
-        </td>
-        <td>{{ it.sale_date or '' }}</td>
-       <td>{{ it.consignor or it.consignor_id or "" }}</td>
-       <td>
-           {% if it.contract %}
-               <a href="/contracts/{{ it.contract.id }}" style="text-decoration:none">
-                   #{{ it.contract.id }}
-               </a>
-               ({{ it.contract.status }})
-           {% elif it.contract_id %}
-               <a href="/contracts/{{ it.contract_id }}" style="text-decoration:none">
-                   #{{ it.contract_id }}
-               </a>
-           {% else %}
-                –
-           {% endif %}
-       </td>
-       <td>{{ it.buyer_name or "" }}</td>
-        <td class="row-actions">
-          {# small barcode preview #}
-          {% if it.sku %}
-            <img src="/barcode/{{ it.sku }}.png"
-                 alt="barcode"
-                 style="height:36px;vertical-align:middle;margin-right:8px"
-                 loading="lazy">
-          {% endif %}
+            <td>
+              {% set own = (it.ownership or '').lower() %}
+              <span class="ownership-pill
+                {% if own == 'owned' %}own-owned{% elif own == 'consigned' %}own-consigned{% else %}own-internal{% endif %}">
+                {{ it.ownership|title }}
+              </span>
+            </td>
 
-          {# print label in a new tab #}
-          <a class="btn-light" href="/items/{{ it.id }}/print" target="_blank">Label</a>
+            <td>{{ it.consignor or '' }}</td>
+            <td>{{ it.category or '' }}</td>
 
-          {# existing buttons #}
-          <a class="btn-light" href="/items/{{ it.id }}/edit">Edit</a>
-          <a class="btn-light" href="/items/{{ it.id }}/sell">Sell</a>
-        </td>
-      </tr>
-    {% else %}
-      <tr>
-        <td colspan="12" style="text-align:center;color:#666">No items yet.</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+            <td>{{ it.cost_cents|money }}</td>
+            <td>
+              {% if it.asking_cents is not none %}
+                {{ it.asking_cents|money }}
+              {% endif %}
+            </td>
 
-{% if page is defined and pages is defined %}
-  <div style="display:flex;gap:8px;justify-content:center;margin:16px 0">
-    {% if page > 1 %}
-      <a href="?s={{ s }}&status={{ status }}&ownership={{ ownership }}&category={{ category }}&page={{ page - 1 }}">« Prev</a>
-    {% endif %}
+            <td>
+              {% if it.status == 'sold' %}
+                <span class="status-sold">Sold</span>
+              {% elif it.ownership == 'internal' %}
+                <span class="status-internal">{{ it.status|title }}</span>
+              {% else %}
+                <span class="status-available">{{ it.status|title }}</span>
+              {% endif %}
+            </td>
 
-    <span>Page {{ page }} / {{ pages }}</span>
+            <td>
+              {% if it.sale_price_cents %}
+                {{ it.sale_price_cents|money }}
+              {% endif %}
+            </td>
 
-    {% if pages and page < pages %}
-      <a href="?s={{ s }}&status={{ status }}&ownership={{ ownership }}&category={{ category }}&page={{ page + 1 }}">Next »</a>
-    {% endif %}
-  </div>
-{% endif %}
+            <td>{{ it.buyer or '' }}</td>
 
-</main>
+            <!-- 🔹 Location fields (A3) -->
+            <td>{{ it.location_building or '' }}</td>
+            <td>{{ it.location_room or '' }}</td>
+            <td>{{ it.location_shelf or '' }}</td>
+            <td>{{ it.location_tote or '' }}</td>
+
+            <td>
+              {% if it.created_at %}
+                {{ it.created_at.strftime("%Y-%m-%d") }}
+              {% endif %}
+            </td>
+
+            <td class="actions">
+              <a href="/items/{{ it.id }}/edit">Edit</a>
+              <a href="/items/{{ it.id }}/photos">Photos</a>
+              {% if it.status != 'sold' %}
+                <a href="/items/{{ it.id }}/sell">Sell</a>
+              {% endif %}
+              <a href="/items/{{ it.id }}/print">Label</a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="16">No items found.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+
+      {% if items and totals %}
+      <tfoot>
+        <tr>
+          <td colspan="5">Totals:</td>
+          <td>${{ "%.2f"|format(totals.cost) }}</td>
+          <td></td>
+          <td></td>
+          <td>${{ "%.2f"|format(totals.sales) }}</td>
+          <td></td>
+          <td colspan="3"></td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </main>
 </body>
 </html>
