@@ -975,6 +975,18 @@ def item_create():
     return redirect(url_for("items_list"))
 
 @require_perm("items:edit")
+@app.get("/items/<int:item_id>/edit")
+def item_edit(item_id):
+    # Load the item being edited
+    item = Item.query.get_or_404(item_id)
+
+    # Load consignors for the dropdown
+    consignors = Consignor.query.order_by(Consignor.name.asc()).all()
+
+    # Re-use the same form template as "New Item"
+    return render_template("item_form.html", item=item, consignors=consignors)
+    
+@require_perm("items:edit")
 @app.post("/items/<int:item_id>/edit")
 def item_update(item_id):
     item = Item.query.get_or_404(item_id)
