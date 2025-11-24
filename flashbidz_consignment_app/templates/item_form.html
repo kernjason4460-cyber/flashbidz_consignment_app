@@ -5,219 +5,139 @@
   <title>{{ 'Edit Item' if item else 'New Item' }} - FlashBidz</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-      margin: 0;
-      background: #f6f7f9;
-    }
-    main {
-      padding: 24px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    form {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0,0,0,.06);
-    }
-    h1 {
-      margin-bottom: 16px;
-    }
-    label {
-      display: block;
-      margin: 10px 0 6px;
-      font-weight: 600;
-    }
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:900px; margin:0 auto; }
+    form { background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    h1 { margin-top:0; }
+    label { display:block; margin:10px 0 6px; font-weight:600; }
     input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font: inherit;
-      box-sizing: border-box;
+      width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;
+      font-family:inherit; font-size:14px;
     }
-    textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-    .row {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .row > div {
-      flex: 1;
-      min-width: 0;
-    }
-    .actions {
-      margin-top: 16px;
-      display: flex;
-      gap: 10px;
-    }
-    .btn {
-      padding: 10px 14px;
-      background: #e60000;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-light {
-      padding: 10px 14px;
-      background: #eee;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      text-decoration: none;
-      color: #333;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    small.help-text {
-      color: #666;
-      display: block;
-      margin-top: 4px;
-      font-size: 12px;
+    .row { display:flex; gap:12px; }
+    .row > div { flex:1; }
+    .actions { margin-top:18px; display:flex; gap:10px; }
+    .btn { padding:10px 14px; background:#e60000; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; }
+    .btn-light { padding:10px 14px; background:#eee; border:none; border-radius:8px; cursor:pointer; text-decoration:none; }
+    small.help { color:#666; display:block; margin-top:4px; font-size:12px; }
+    @media (max-width:700px) {
+      .row { flex-direction:column; }
     }
   </style>
 </head>
 <body>
   {% include "_navbar.html" %}
-
   <main>
     <h1>{{ 'Edit Item' if item else 'New Item' }}</h1>
 
-    {# Flash messages if any #}
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-          {% for m in messages %}
-            <li>{{ m }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-
-    <form method="post"
-      action="{% if item %}{{ url_for('item_update', item_id=item.id) }}{% else %}{{ url_for('item_create') }}{% endif %}">
+    <form method="post" action="{{ '/items/' ~ item.id ~ '/edit' if item else '/items/new' }}">
 
       <!-- Title -->
-      <label for="title">Title</label>
-      <input id="title" name="title" required
-             value="{{ item.title if item else '' }}"/>
+      <label>Title</label>
+      <input name="title" required value="{{ item.title if item else '' }}"/>
 
-      <!-- Ownership + Category row -->
+      <!-- Ownership + Category -->
       <div class="row">
         <div>
           <label for="ownership">Ownership</label>
           {% set own = item.ownership if item else 'owned' %}
           <select name="ownership" id="ownership">
-            <option value="owned"     {{ 'selected' if own == 'owned' else '' }}>FlashBidz Owned</option>
-            <option value="consigned" {{ 'selected' if own == 'consigned' else '' }}>Consigned (payout to consignor)</option>
-            <option value="internal"  {{ 'selected' if own == 'internal' else '' }}>Internal (Jason / Jennifer / staff)</option>
+            <option value="owned"    {{ 'selected' if own == 'owned'    else '' }}>FlashBidz Owned</option>
+            <option value="consigned"{{ 'selected' if own == 'consigned'else '' }}>Consigned (payout to consignor)</option>
+            <option value="internal" {{ 'selected' if own == 'internal' else '' }}>Internal (Jason / Jennifer / staff)</option>
           </select>
         </div>
-
         <div>
-          <label for="category">Category</label>
-          <input id="category" name="category"
+          <label>Category</label>
+          <input name="category"
                  placeholder="Furniture, Electronics, Toys"
                  value="{{ item.category or '' }}"/>
         </div>
       </div>
 
-      <!-- Supplier + Sale Date row -->
+      <!-- Cost + Asking -->
       <div class="row">
         <div>
-          <label for="supplier">Supplier (name)</label>
-          <input id="supplier" name="supplier"
-                 value="{{ (item.supplier or '') if item else '' }}">
-        </div>
-        <div>
-          <label for="sale_date">Sale Date</label>
-          <input id="sale_date" type="date" name="sale_date"
-                 value="{{ item.sale_date.isoformat() if item and item.sale_date else '' }}">
-        </div>
-      </div>
-
-      <!-- LOCATION BLOCK -->
-      <label>Location (Building / Room / Shelf / Tote)</label>
-      <div class="row">
-        <div>
-          <input
-            name="location_building"
-            placeholder="Building / Area"
-            value="{{ item.location_building if item and item.location_building else '' }}"
-          />
-        </div>
-        <div>
-          <input
-            name="location_room"
-            placeholder="Room / Aisle"
-            value="{{ item.location_room if item and item.location_room else '' }}"
-          />
-        </div>
-        <div>
-          <input
-            name="location_shelf"
-            placeholder="Shelf / Rack"
-            value="{{ item.location_shelf if item and item.location_shelf else '' }}"
-          />
-        </div>
-        <div>
-          <input
-            name="location_tote"
-            placeholder="Tote / Bin"
-            value="{{ item.location_tote if item and item.location_tote else '' }}"
-          />
-        </div>
-      </div>
-      <small class="help-text">
-        These fields are just for you and staff so you can find items fast (warehouse, room, shelf, and tote/bin).
-      </small>
-
-      <!-- Cost + Asking row -->
-      <div class="row">
-        <div>
-          <label for="cost">Cost ($)</label>
-          <input id="cost" name="cost" type="number" step="0.01"
+          <label>Cost ($)</label>
+          <input name="cost" type="number" step="0.01"
                  value="{{ '%.2f'|format(item.cost) if item and item.cost_cents is not none else '' }}"/>
         </div>
         <div>
-          <label for="asking">Asking ($)</label>
-          <input id="asking" name="asking" type="number" step="0.01"
+          <label>Asking ($)</label>
+          <input name="asking" type="number" step="0.01"
                  value="{{ '%.2f'|format(item.asking) if item and item.asking is not none else '' }}"/>
         </div>
       </div>
 
-      <!-- Consignor row (shown only if ownership = consigned) -->
+      <!-- Location block -->
+      <h3>Location (optional)</h3>
+      <div class="row">
+        <div>
+          <label>Building</label>
+          <input name="building"
+                 placeholder="Main, Barn, Storage Unit"
+                 value="{{ item.building or '' if item else '' }}"/>
+        </div>
+        <div>
+          <label>Room / Area</label>
+          <input name="room"
+                 placeholder="Front Room, Back Storage"
+                 value="{{ item.room or '' if item else '' }}"/>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Shelf</label>
+          <input name="shelf"
+                 placeholder="Shelf A3"
+                 value="{{ item.shelf or '' if item else '' }}"/>
+        </div>
+        <div>
+          <label>Tote / Bin</label>
+          <input name="tote"
+                 placeholder="Tote 12"
+                 value="{{ item.tote or '' if item else '' }}"/>
+        </div>
+      </div>
+
+      <!-- Supplier + Sale Date -->
+      <div class="row">
+        <div>
+          <label>Supplier (name)</label>
+          <input name="supplier"
+                 value="{{ (item.supplier or '') if item else '' }}">
+        </div>
+        <div>
+          <label>Sale Date</label>
+          <input type="date" name="sale_date"
+                 value="{{ item.sale_date.isoformat() if item and item.sale_date else '' }}">
+        </div>
+      </div>
+
+      <!-- Consignor (only when consigned) -->
       <div id="consignor-row">
         <label for="consignor">Consignor (if consigned)</label>
         <select name="consignor" id="consignor">
           <option value="">-- None / House Owned --</option>
           {% for c in consignors %}
             <option value="{{ c.name }}"
-              {% if item and item.consignor == c.name %}selected{% endif %}>
+                    {% if item and item.consignor == c.name %}selected{% endif %}>
               {{ c.name }}
             </option>
           {% endfor %}
         </select>
-        <small class="help-text">
+        <small class="help">
           Only used when Ownership is set to “Consigned”.
         </small>
       </div>
 
       <!-- Notes -->
-      <label for="notes">Notes</label>
-      <textarea id="notes" name="notes">{{ item.notes or '' }}</textarea>
+      <label>Notes</label>
+      <textarea name="notes" rows="3">{{ item.notes or '' if item else '' }}</textarea>
 
-      <!-- Actions -->
       <div class="actions">
         <button class="btn" type="submit">Save</button>
-        <a class="btn-light" href="{{ url_for('items_list') }}">Cancel</a>
+        <a class="btn-light" href="/items">Cancel</a>
       </div>
     </form>
   </main>
@@ -228,7 +148,7 @@
       const consignorRow = document.getElementById("consignor-row");
       if (!ownership || !consignorRow) return;
 
-      const val = (ownership.value || "").toLowerCase();
+      const val = ownership.value.toLowerCase();
       if (val === "consigned") {
         consignorRow.style.display = "";
       } else {
@@ -242,7 +162,7 @@
       const ownership = document.getElementById("ownership");
       if (ownership) {
         ownership.addEventListener("change", toggleConsignorRow);
-        toggleConsignorRow(); // initial state
+        toggleConsignorRow();
       }
     });
   </script>
