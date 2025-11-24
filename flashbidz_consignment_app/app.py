@@ -929,7 +929,9 @@ def item_create():
     room     = (request.form.get("room") or "").strip() or None
     shelf    = (request.form.get("shelf") or "").strip() or None
     tote     = (request.form.get("tote") or "").strip() or None
-
+    location       = (request.form.get("location") or "").strip() or None
+    location_detail = (request.form.get("location_detail") or "").strip() or None
+    
     # Other optional fields
     notes          = (request.form.get("notes") or "").strip() or None
     consignor_name = (request.form.get("consignor") or "").strip() or None
@@ -1015,6 +1017,8 @@ def item_create():
         room=room,
         shelf=shelf,
         tote=tote,
+        location=location,
+        location_detail=location_detail,
     )
 
     db.session.add(item)
@@ -1069,7 +1073,12 @@ def item_update(item_id):
     # Notes
     notes = (request.form.get("notes") or "").strip()
     item.notes = notes or None
+    loc = (request.form.get("location") or "").strip()
+    item.location = loc or None
 
+    loc_detail = (request.form.get("location_detail") or "").strip()
+    item.location_detail = loc_detail or None
+    
     # Consignor selection from dropdown
     consignor_name = (request.form.get("consignor") or "").strip() or None
     item.consignor = consignor_name
