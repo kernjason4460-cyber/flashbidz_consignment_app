@@ -2,146 +2,80 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Items - FlashBidz</title>
+  <title>Inventory - FlashBidz</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-      margin: 0;
-      background: #f6f7f9;
-      color: #111;
-    }
-    main {
-      padding: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    h1 {
-      margin: 0 0 12px;
-    }
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .toolbar input[type="text"],
-    .toolbar input[type="date"],
-    .toolbar select {
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      min-width: 180px;
-    }
-    .toolbar button,
-    .toolbar a.btn {
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
-    }
-    .toolbar button {
-      background: #e60000;
-      color: #fff;
-    }
-    .toolbar a.btn {
-      background: #eee;
-      color: #333;
-    }
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:1200px; margin:0 auto; }
+    h1 { margin-top:0; }
 
-    .summary {
-      background: #fff;
-      border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.04);
-      font-size: 14px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
+    .toolbar {
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-bottom:16px;
+      align-items:center;
     }
-    .summary span.label {
-      font-weight: 600;
+    .toolbar form { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+
+    input[type="text"], select {
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid #ddd;
+      font-size:14px;
     }
 
     table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 6px 20px rgba(0,0,0,.06);
-      font-size: 14px;
-    }
-    thead {
-      background: #111;
-      color: #fff;
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 6px 20px rgba(0,0,0,.06);
+      font-size:14px;
     }
     th, td {
-      padding: 8px 10px;
-      border-bottom: 1px solid #eee;
-      vertical-align: top;
+      padding:8px 10px;
+      border-bottom:1px solid #eee;
+      text-align:left;
     }
     th {
-      text-align: left;
-      white-space: nowrap;
+      background:#111;
+      color:#fff;
+      position:sticky;
+      top:0;
+      z-index:1;
     }
-    tbody tr:nth-child(even) {
-      background: #fafafa;
-    }
-    tbody tr:hover {
-      background: #f0f4ff;
-    }
-    .status-sold {
-      color: #0a7b16;
-      font-weight: 600;
-    }
-    .status-available {
-      color: #c97a00;
-      font-weight: 600;
-    }
-    .status-internal {
-      color: #555;
-      font-weight: 600;
-    }
-    .ownership-pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .own-owned    { background:#e0f2ff; color:#074a84; }
-    .own-consigned{ background:#e1ffe5; color:#106b24; }
-    .own-internal { background:#f5e0ff; color:#6b118d; }
+    tbody tr:nth-child(even) { background:#fafbfc; }
+    tbody tr:hover { background:#f1f5ff; }
 
-    .actions a {
-      display: inline-block;
-      margin-right: 6px;
-      font-size: 12px;
-      text-decoration: none;
-      color: #0b63ce;
-    }
-    .actions a.danger {
-      color: #c00000;
+    .status-sold { color:#0a7a15; font-weight:600; }
+    .status-available { color:#555; }
+    .missing-location { background:#fff8e1 !important; }
+
+    .pill {
+      display:inline-flex;
+      padding:2px 6px;
+      border-radius:999px;
+      font-size:11px;
+      border:1px solid #ccc;
+      background:#fafafa;
     }
 
-    tfoot td {
-      font-weight: 600;
-      background: #f3f4f6;
+    .btn-sm {
+      padding:4px 8px;
+      font-size:12px;
+      border-radius:6px;
+      border:1px solid #ccc;
+      background:#fff;
+      text-decoration:none;
+      color:#333;
     }
+    .btn-sm:hover { background:#f0f0f0; }
 
-    @media (max-width: 900px) {
-      table, thead, tbody, th, td, tr {
-        font-size: 12px;
-      }
-      th, td {
-        padding: 6px 6px;
-      }
+    @media (max-width:900px) {
+      table { font-size:12px; }
+      th, td { padding:6px 6px; }
     }
   </style>
 </head>
@@ -150,36 +84,28 @@
   <main>
     <h1>Inventory</h1>
 
-    <!-- Filter / search bar -->
-    <form method="get" class="toolbar">
-      <input
-        type="text"
-        name="q"
-        placeholder="Search by title, SKU, buyer, consignor..."
-        value="{{ request.args.get('q','') }}"
-      >
-      <button type="submit">Filter</button>
-      <a href="/items" class="btn">Clear</a>
-      <a href="/items/new" class="btn" style="margin-left:auto;background:#e60000;color:#fff;">
-        + Add Item
-      </a>
-    </form>
+    <div class="toolbar">
+      <form method="get" action="/items">
+        <input type="text" name="q" placeholder="Search by title / SKU"
+               value="{{ q or '' }}"/>
 
-    <!-- Totals summary -->
-    {% if totals %}
-    <div class="summary">
-      <div><span class="label">Total Cost:</span>
-        ${{ "%.2f"|format(totals.cost) }}</div>
-      <div><span class="label">Total Sales:</span>
-        ${{ "%.2f"|format(totals.sales) }}</div>
-      <div><span class="label">Profit (Owned):</span>
-        ${{ "%.2f"|format(totals.profit) }}</div>
-      <div><span class="label">Consignor Payouts:</span>
-        ${{ "%.2f"|format(totals.consignor / 100.0) }}</div>
-      <div><span class="label">House Net:</span>
-        ${{ "%.2f"|format(totals.house / 100.0) }}</div>
+        <!-- Building filter -->
+        <select name="building">
+          <option value="">All Buildings</option>
+          {% set current_building = request.args.get('building','') %}
+          {% for b in items|map(attribute='building')|reject('equalto', None)|unique %}
+            <option value="{{ b }}"
+              {% if b == current_building %}selected{% endif %}>
+              {{ b }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <button class="btn-sm" type="submit">Filter</button>
+      </form>
+
+      <a class="btn-sm" href="/items/new">+ New Item</a>
     </div>
-    {% endif %}
 
     <table>
       <thead>
@@ -188,107 +114,52 @@
           <th>Title</th>
           <th>Ownership</th>
           <th>Consignor</th>
-          <th>Category</th>
-          <th>Cost</th>
-          <th>Asking</th>
-          <th>Status</th>
-          <th>Sale Price</th>
-          <th>Buyer</th>
-          <!-- 🔹 NEW LOCATION COLUMNS -->
           <th>Building</th>
           <th>Room</th>
           <th>Shelf</th>
           <th>Tote</th>
-          <th>Created</th>
+          <th>Status</th>
+          <th>Cost</th>
+          <th>Sale</th>
+          <th>Buyer</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        {% if items %}
-          {% for it in items %}
-          <tr>
+        {% for it in items %}
+          {% set has_location = (it.building or it.room or it.shelf or it.tote) %}
+          <tr class="{{ '' if has_location else 'missing-location' }}">
             <td>{{ it.sku }}</td>
             <td>{{ it.title }}</td>
-
-            <td>
-              {% set own = (it.ownership or '').lower() %}
-              <span class="ownership-pill
-                {% if own == 'owned' %}own-owned{% elif own == 'consigned' %}own-consigned{% else %}own-internal{% endif %}">
-                {{ it.ownership|title }}
-              </span>
-            </td>
-
+            <td><span class="pill">{{ it.ownership or '' }}</span></td>
             <td>{{ it.consignor or '' }}</td>
-            <td>{{ it.category or '' }}</td>
-
-            <td>{{ it.cost_cents|money }}</td>
-            <td>
-              {% if it.asking_cents is not none %}
-                {{ it.asking_cents|money }}
-              {% endif %}
-            </td>
-
+            <td>{{ it.building or '' }}</td>
+            <td>{{ it.room or '' }}</td>
+            <td>{{ it.shelf or '' }}</td>
+            <td>{{ it.tote or '' }}</td>
             <td>
               {% if it.status == 'sold' %}
                 <span class="status-sold">Sold</span>
-              {% elif it.ownership == 'internal' %}
-                <span class="status-internal">{{ it.status|title }}</span>
               {% else %}
-                <span class="status-available">{{ it.status|title }}</span>
+                <span class="status-available">Available</span>
               {% endif %}
             </td>
-
-            <td>
-              {% if it.sale_price_cents %}
-                {{ it.sale_price_cents|money }}
-              {% endif %}
-            </td>
-
+            <td>{{ it.cost_cents|money }}</td>
+            <td>{{ it.sale_price_cents|money }}</td>
             <td>{{ it.buyer or '' }}</td>
-
-            <!-- 🔹 Location fields (A3) -->
-            <td>{{ it.location_building or '' }}</td>
-            <td>{{ it.location_room or '' }}</td>
-            <td>{{ it.location_shelf or '' }}</td>
-            <td>{{ it.location_tote or '' }}</td>
-
             <td>
-              {% if it.created_at %}
-                {{ it.created_at.strftime("%Y-%m-%d") }}
-              {% endif %}
-            </td>
-
-            <td class="actions">
-              <a href="/items/{{ it.id }}/edit">Edit</a>
-              <a href="/items/{{ it.id }}/photos">Photos</a>
-              {% if it.status != 'sold' %}
-                <a href="/items/{{ it.id }}/sell">Sell</a>
-              {% endif %}
-              <a href="/items/{{ it.id }}/print">Label</a>
+              <a class="btn-sm" href="/items/{{ it.id }}/print">Label</a>
+              <a class="btn-sm" href="/items/{{ it.id }}/sell">Sell</a>
+              <a class="btn-sm" href="/items/{{ it.id }}/photos">Photos</a>
+              <form method="post" action="/items/{{ it.id }}/delete"
+                    style="display:inline"
+                    onsubmit="return confirm('Delete this item?');">
+                <button class="btn-sm" type="submit">Delete</button>
+              </form>
             </td>
           </tr>
-          {% endfor %}
-        {% else %}
-          <tr>
-            <td colspan="16">No items found.</td>
-          </tr>
-        {% endif %}
+        {% endfor %}
       </tbody>
-
-      {% if items and totals %}
-      <tfoot>
-        <tr>
-          <td colspan="5">Totals:</td>
-          <td>${{ "%.2f"|format(totals.cost) }}</td>
-          <td></td>
-          <td></td>
-          <td>${{ "%.2f"|format(totals.sales) }}</td>
-          <td></td>
-          <td colspan="3"></td>
-          <td colspan="3"></td>
-        </tr>
-      </tfoot>
-      {% endif %}
     </table>
   </main>
 </body>
