@@ -455,7 +455,10 @@ class Item(db.Model):
 
     # Misc
     notes = db.Column(db.Text)
-    # Location (for warehouse / room / shelf / tote)
+    
+    # Inventory location
+    location = db.Column(db.String(120))        # e.g. "Back room", "Trailer", "Garage"
+    location_detail = db.Column(db.String(240)) # e.g. "Shelf A3", "Bin 12", "Rack 4"# Location (for warehouse / room / shelf / tote)
     location_building = db.Column(db.String(80))  # e.g., WH1, Store, Garage
     location_room     = db.Column(db.String(80))  # e.g., Back Room, Aisle 3
     location_shelf    = db.Column(db.String(80))  # e.g., Shelf 2, Rack B
@@ -2607,6 +2610,11 @@ def upgrade_item_locations():
         ))
         conn.execute(text(
             "ALTER TABLE items ADD COLUMN IF NOT EXISTS tote VARCHAR(80)"
+        ))
+         "ALTER TABLE items ADD COLUMN IF NOT EXISTS location VARCHAR(120)"
+        ))
+        conn.execute(text(
+            "ALTER TABLE items ADD COLUMN IF NOT EXISTS location_detail VARCHAR(240)"
         ))
     return "OK – item location columns added (or already existed)."    
 
