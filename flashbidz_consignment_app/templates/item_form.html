@@ -5,135 +5,175 @@
   <title>{{ 'Edit Item' if item else 'New Item' }} - FlashBidz</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
-    main { padding:24px; max-width:900px; margin:0 auto; }
-    form { background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
-    h1 { margin-top:0; }
-    label { display:block; margin:10px 0 6px; font-weight:600; }
-    input, select, textarea {
-      width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;
-      font-family:inherit; font-size:14px;
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      margin: 0;
+      background: #f6f7f9;
     }
-    .row { display:flex; gap:12px; }
-    .row > div { flex:1; }
-    .actions { margin-top:18px; display:flex; gap:10px; }
-    .btn { padding:10px 14px; background:#e60000; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; }
-    .btn-light { padding:10px 14px; background:#eee; border:none; border-radius:8px; cursor:pointer; text-decoration:none; }
-    small.help { color:#666; display:block; margin-top:4px; font-size:12px; }
-    @media (max-width:700px) {
-      .row { flex-direction:column; }
+    main {
+      padding: 24px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.06);
+    }
+    label {
+      display: block;
+      margin: 10px 0 6px;
+      font-weight: 600;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .row > div {
+      flex: 1;
+      min-width: 0;
+    }
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      padding: 10px 14px;
+      background: #e60000;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-light {
+      padding: 10px 14px;
+      background: #eee;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #333;
+    }
+    .form-row {
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   {% include "_navbar.html" %}
+
   <main>
     <h1>{{ 'Edit Item' if item else 'New Item' }}</h1>
 
     <form method="post" action="{{ '/items/' ~ item.id ~ '/edit' if item else '/items/new' }}">
-
       <!-- Title -->
-      <label>Title</label>
-      <input name="title" required value="{{ item.title if item else '' }}"/>
+      <label for="title">Title</label>
+      <input id="title" name="title" required
+             value="{{ item.title if item else '' }}"/>
 
       <!-- Ownership + Category -->
       <div class="row">
-        <div>
+        <div class="form-row">
           <label for="ownership">Ownership</label>
-          {% set own = item.ownership if item else 'owned' %}
           <select name="ownership" id="ownership">
-            <option value="owned"    {{ 'selected' if own == 'owned'    else '' }}>FlashBidz Owned</option>
-            <option value="consigned"{{ 'selected' if own == 'consigned'else '' }}>Consigned (payout to consignor)</option>
-            <option value="internal" {{ 'selected' if own == 'internal' else '' }}>Internal (Jason / Jennifer / staff)</option>
+            {% set own = (item.ownership if item else 'owned')|lower %}
+            <option value="owned" {{ 'selected' if own == 'owned' else '' }}>
+              FlashBidz Owned
+            </option>
+            <option value="consigned" {{ 'selected' if own == 'consigned' else '' }}>
+              Consigned (payout to consignor)
+            </option>
+            <option value="internal" {{ 'selected' if own == 'internal' else '' }}>
+              Internal (Jason / Jennifer / staff)
+            </option>
           </select>
         </div>
-        <div>
-          <label>Category</label>
-          <input name="category"
+
+        <div class="form-row">
+          <label for="category">Category</label>
+          <input id="category" name="category"
                  placeholder="Furniture, Electronics, Toys"
                  value="{{ item.category or '' }}"/>
         </div>
       </div>
 
-      <!-- Cost + Asking -->
+      <!-- Supplier + Sale date -->
       <div class="row">
-        <div>
-          <label>Cost ($)</label>
-          <input name="cost" type="number" step="0.01"
-                 value="{{ '%.2f'|format(item.cost) if item and item.cost_cents is not none else '' }}"/>
-        </div>
-        <div>
-          <label>Asking ($)</label>
-          <input name="asking" type="number" step="0.01"
-                 value="{{ '%.2f'|format(item.asking) if item and item.asking is not none else '' }}"/>
-        </div>
-      </div>
-
-      <!-- Location block -->
-      <h3>Location (optional)</h3>
-      <div class="row">
-        <div>
-          <label>Building</label>
-          <input name="building"
-                 placeholder="Main, Barn, Storage Unit"
-                 value="{{ item.building or '' if item else '' }}"/>
-        </div>
-        <div>
-          <label>Room / Area</label>
-          <input name="room"
-                 placeholder="Front Room, Back Storage"
-                 value="{{ item.room or '' if item else '' }}"/>
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>Shelf</label>
-          <input name="shelf"
-                 placeholder="Shelf A3"
-                 value="{{ item.shelf or '' if item else '' }}"/>
-        </div>
-        <div>
-          <label>Tote / Bin</label>
-          <input name="tote"
-                 placeholder="Tote 12"
-                 value="{{ item.tote or '' if item else '' }}"/>
-        </div>
-      </div>
-
-      <!-- Supplier + Sale Date -->
-      <div class="row">
-        <div>
-          <label>Supplier (name)</label>
-          <input name="supplier"
+        <div class="form-row">
+          <label for="supplier">Supplier (name)</label>
+          <input id="supplier" name="supplier"
                  value="{{ (item.supplier or '') if item else '' }}">
         </div>
-        <div>
-          <label>Sale Date</label>
-          <input type="date" name="sale_date"
+        <div class="form-row">
+          <label for="sale_date">Sale Date</label>
+          <input id="sale_date" type="date" name="sale_date"
                  value="{{ item.sale_date.isoformat() if item and item.sale_date else '' }}">
         </div>
       </div>
 
+      <!-- Cost / Asking -->
+      <div class="row">
+        <div class="form-row">
+          <label for="cost">Cost ($)</label>
+          <input id="cost" name="cost" type="number" step="0.01"
+                 value="{{ '%.2f'|format(item.cost) if item and item.cost_cents is not none else '' }}"/>
+        </div>
+        <div class="form-row">
+          <label for="asking">Asking ($)</label>
+          <input id="asking" name="asking" type="number" step="0.01"
+                 value="{{ '%.2f'|format(item.asking) if item and item.asking is not none else '' }}"/>
+        </div>
+      </div>
+
+      <!-- NEW: Location fields -->
+      <div class="row">
+        <div class="form-row">
+          <label for="location">Location</label>
+          <input id="location" name="location"
+                 placeholder="Back room, Trailer, Garage, Shelf A, etc."
+                 value="{{ item.location or '' }}"/>
+        </div>
+        <div class="form-row">
+          <label for="location_detail">Location Details</label>
+          <input id="location_detail" name="location_detail"
+                 placeholder="Bin 12, Rack 4, Top shelf, etc."
+                 value="{{ item.location_detail or '' }}"/>
+        </div>
+      </div>
+
       <!-- Consignor (only when consigned) -->
-      <div id="consignor-row">
+      <div class="form-row" id="consignor-row">
         <label for="consignor">Consignor (if consigned)</label>
         <select name="consignor" id="consignor">
           <option value="">-- None / House Owned --</option>
           {% for c in consignors %}
             <option value="{{ c.name }}"
-                    {% if item and item.consignor == c.name %}selected{% endif %}>
+              {% if item and item.consignor == c.name %}selected{% endif %}>
               {{ c.name }}
             </option>
           {% endfor %}
         </select>
-        <small class="help">
+        <small style="color:#666;display:block;margin-top:4px;">
           Only used when Ownership is set to “Consigned”.
         </small>
       </div>
 
       <!-- Notes -->
-      <label>Notes</label>
-      <textarea name="notes" rows="3">{{ item.notes or '' if item else '' }}</textarea>
+      <div class="form-row">
+        <label for="notes">Notes</label>
+        <input id="notes" name="notes" value="{{ item.notes or '' }}"/>
+      </div>
 
       <div class="actions">
         <button class="btn" type="submit">Save</button>
@@ -162,7 +202,7 @@
       const ownership = document.getElementById("ownership");
       if (ownership) {
         ownership.addEventListener("change", toggleConsignorRow);
-        toggleConsignorRow();
+        toggleConsignorRow(); // initial state
       }
     });
   </script>
