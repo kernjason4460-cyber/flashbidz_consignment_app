@@ -123,12 +123,19 @@
           <th>Sale</th>
           <th>Buyer</th>
           <th>Actions</th>
+          <th>Location</th> 
         </tr>
       </thead>
       <tbody>
         {% for it in items %}
           {% set has_location = (it.building or it.room or it.shelf or it.tote) %}
           <tr class="{{ '' if has_location else 'missing-location' }}">
+            <td>
+              {{ it.location or '' }}
+              {% if it.location_detail %}
+                <br><small>{{ it.location_detail }}</small>
+              {% endif %}
+            </td>
             <td>{{ it.sku }}</td>
             <td>{{ it.title }}</td>
             <td><span class="pill">{{ it.ownership or '' }}</span></td>
