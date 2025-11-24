@@ -2629,12 +2629,13 @@ def upgrade_item_locations():
         conn.execute(text(
             "ALTER TABLE items ADD COLUMN IF NOT EXISTS tote VARCHAR(80)"
         ))
-         "ALTER TABLE items ADD COLUMN IF NOT EXISTS location VARCHAR(120)"
+        conn.execute(text(
+            "ALTER TABLE items ADD COLUMN IF NOT EXISTS location VARCHAR(120)"
         ))
         conn.execute(text(
-            "ALTER TABLE items ADD COLUMN IF NOT EXISTS location_detail VARCHAR(240)"
+            "ALTER TABLE items ADD COLUMN IF NOT EXISTS location_detail VARCHAR(200)"
         ))
-    return "OK – item location columns added (or already existed)."    
+return "OK – item location columns added (or already existed)."
 
 # ✅ ALWAYS run on import (local + Render)
 with app.app_context():
