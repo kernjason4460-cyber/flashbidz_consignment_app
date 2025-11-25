@@ -2256,20 +2256,127 @@ def export_items_csv():
     import csv, io
     output = io.StringIO()
     w = csv.writer(output)
-    w.writerow(["id","sku","title","category","ownership","cost","asking","status","sale_price","sale_date","buyer","consignor_id","consignor","notes","created_at","updated_at"])
+
+    # Added building / room / shelf / tote / location_detail
+    w.writerow([
+        "id",
+        "sku",
+        "title",
+        "category",
+        "ownership",
+        "cost",
+        "asking",
+        "status",
+        "sale_price",
+        "sale_date",
+        "buyer",
+        "consignor_id",
+        "consignor",
+        "building",
+        "room",
+        "shelf",
+        "tote",
+        "location_detail",
+        "notes",
+        "created_at",
+        "updated_at",
+    ])
+
     for it in Item.query.order_by(Item.id.asc()).all():
         w.writerow([
-            it.id, it.sku, it.title or "", it.category or "", it.ownership or "",
-            it.cost, it.asking, it.status or "", it.sale_price, it.sale_date or "",
-            it.buyer or "", it.consignor_id or "", it.consignor or "", (it.notes or "").replace("\n"," "),
-            it.created_at or "", it.updated_at or ""
+            it.id,
+            it.sku,
+            it.title or "",
+            it.category or "",
+            it.ownership or "",
+            getattr(it, "cost", None),                 # cost in dollars helper
+            getattr(it, "asking", None),               # asking in dollars helper
+            it.status or "",
+            getattr(it, "sale_price", None),           # sale price in dollars helper
+            it.sale_date or "",
+            getattr(it, "buyer", "") or "",
+            it.consignor_id or "",
+            it.consignor or "",
+            getattr(it, "building", "") or "",
+            getattr(it, "room", "") or "",
+            getattr(it, "shelf", "") or "",
+            getattr(it, "tote", "") or "",
+            getattr(it, "location_detail", "") or "",
+            (it.notes or "").replace("\n", " "),
+            it.created_at or "",
+            it.updated_at or "",
         ])
+
     from flask import make_response
     resp = make_response(output.getvalue())
     resp.headers["Content-Type"] = "text/csv"
     resp.headers["Content-Disposition"] = "attachment; filename=items_export.csv"
     return resp
 
+@app.get("/admin/export/locations.csv")
+def export_locations_csv():
+    """
+    Summary CSV: one row per (building, room, shelf, tote) with counts & totals.
+    """
+    import csv, io
+    from sqlalchemy import func
+
+    output = io.StringIO()
+    w = csv.writer(output)
+
+    w.writerow([
+        "building",
+        "room",
+        "shelf",
+        "tote",
+        "items_count",
+        "total_cost",
+        "total_sales",
+    ])
+
+    rows = (
+        db.session.query(
+            Item.building,
+            Item.room,
+            Item.shelf,
+            Item.tote,
+            func.count(Item.id).label("count_items"),
+            func.coalesce(func.sum(Item.cost_cents), 0).label("cost_cents"),
+            func.coalesce(func.sum(Item.sale_price_cents), 0).label("sales_cents"),
+        )
+        .group_by(Item.building, Item.room, Item.shelf, Item.tote)
+        .order_by(
+            Item.building.nullsfirst(),
+            Item.room.nullsfirst(),
+            Item.shelf.nullsfirst(),
+            Item.tote.nullsfirst(),
+        )
+        .all()
+    )
+
+    def cents_to_dollars(c):
+        return (c or 0) / 100.0
+
+    for r in rows:
+        w.writerow([
+            r.building or "",
+            r.room or "",
+            r.shelf or "",
+            r.tote or "",
+            r.count_items or 0,
+            "{:.2f}".format(cents_to_dollars(r.cost_cents)),
+            "{:.2f}".format(cents_to_dollars(r.sales_cents)),
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    from flask import make_response
+    resp = make_response(csv_data)
+    resp.headers["Content-Type"] = "text/csv"
+    resp.headers["Content-Disposition"] = "attachment; filename=locations_export.csv"
+    return resp
+    
 @app.get("/admin/export/consignors.csv")
 def export_consignors_csv():
     import csv, io
