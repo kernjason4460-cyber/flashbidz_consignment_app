@@ -197,7 +197,7 @@
       <h1>Items</h1>
       <a href="/items/new" class="btn-primary">+ New Item</a>
     </div>
-<a class="btn-light" href="/items/{{ item.id }}/clone">Clone Item</a>
+
     <!-- Summary -->
     <div class="summary-row">
       <div class="summary-card">
@@ -398,6 +398,7 @@
                 <a href="/items/{{ it.id }}/sell">Sell</a>
               {% endif %}
               <a href="/items/{{ it.id }}/print">Label</a>
+              <a href="/items/{{ it.id }}/clone">Clone</a>
             </td>
           </tr>
           {% endfor %}
