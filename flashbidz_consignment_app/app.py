@@ -857,6 +857,8 @@ def send_email(to_addr: str, subject: str, body: str):
 
 from sqlalchemy import func
 
+from sqlalchemy import func  # make sure this import is near the top
+
 @require_perm("items:view")
 @app.get("/items")
 def items_list():
@@ -917,6 +919,18 @@ def items_list():
     # ------- Load items -------
     items = q.order_by(Item.created_at.desc()).all()
 
+    # ------- Photo counts per item (for "needs photos" flag) -------
+    photo_counts = {}
+    if items:
+        ids = [it.id for it in items]
+        rows = (
+            db.session.query(Photo.item_id, func.count(Photo.id))
+            .filter(Photo.item_id.in_(ids))
+            .group_by(Photo.item_id)
+            .all()
+        )
+        photo_counts = {item_id: count for (item_id, count) in rows}
+
     # ------- Totals (in dollars) -------
     total_cost = sum((it.cost_cents or 0) for it in items) / 100.0
     total_sales = sum((it.sale_price_cents or 0) for it in items) / 100.0
@@ -970,8 +984,9 @@ def items_list():
         shelves=shelves,
         totes=totes,
         consignors=consignors,
+        # NEW: photo count map
+        photo_counts=photo_counts,
     )
-    items = q.order_by(Item.created_at.desc()).all()
 
     # --- Totals (server-side) ---
     total_cost = sum((it.cost_cents or 0) for it in items) / 100.0
