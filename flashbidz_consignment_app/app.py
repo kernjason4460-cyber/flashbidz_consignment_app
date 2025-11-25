@@ -2379,6 +2379,8 @@ def _csv_contracts_string():
             ct.total_items or 0,
             ct.total_estimated_value_cents or 0,
             (ct.notes or "").replace("\n", " ").replace("\r", " "),
+            str(ct.created_at or ""),
+            str(ct.updated_at or ""),
         ])
 
     csv_data = output.getvalue()
