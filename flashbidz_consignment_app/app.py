@@ -433,7 +433,13 @@ class Item(db.Model):
     sku = db.Column(db.String(32), unique=True, nullable=False, index=True)
     title = db.Column(db.String(200), nullable=False)
     category = db.Column(db.String(100))
-
+    # --- NEW Item Location Fields ---
+    building        = db.Column(db.String(80))
+    room            = db.Column(db.String(80))
+    shelf           = db.Column(db.String(80))
+    tote            = db.Column(db.String(80))
+    location        = db.Column(db.String(120))
+    location_detail = db.Column(db.String(200))
     photos = db.relationship(
         "Photo",
         backref="item",
