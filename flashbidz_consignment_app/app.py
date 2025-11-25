@@ -2282,13 +2282,12 @@ def _csv_items_string():
             it.asking_cents or 0,
             it.status or "",
             it.sale_price_cents or 0,
-            it.sale_date.isoformat() if it.sale_date else "",
-            getattr(it, "buyer", None) or getattr(it, "buyer_name", None) or "",
+            it.sale_date.isoformat() if it.sale_date else "",getattr(it, "buyer", None) or getattr(it, "buyer_name", None) or "",
             it.consignor_id or "",
             it.consignor or "",
             (it.notes or "").replace("\n", " ").replace("\r", " "),
-            it.created_at.isoformat() if it.created_at else "",
-            it.updated_at.isoformat() if it.updated_at else "",
+            str(it.created_at or ""),
+            str(it.updated_at or ""),
         ])
 
     csv_data = output.getvalue()
