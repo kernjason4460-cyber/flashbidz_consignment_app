@@ -12,7 +12,8 @@
         <a href="/upload"    style="color:#fff;text-decoration:none">Upload</a>
         <a href="/consignors" style="color:#fff;text-decoration:none">Consignors</a>
         <a href="/locations" style="color:#fff;text-decoration:none">Locations</a>
-        
+        <a href="/checkout">Checkout</a>
+ 
         {# ==== Statements & Reports Only If Allowed ==== #}
         {% if g.user and g.user.has_perm('reports:view') %}
             <a href="/statements" style="color:#fff;text-decoration:none">Statements</a>
