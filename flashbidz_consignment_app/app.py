@@ -2215,6 +2215,12 @@ def admin_view():
     s = get_settings()
     return render_template("admin.html", s=s)
 
+@app.get("/admin/import")
+@require_perm("items:edit")
+def admin_import():
+    # Reuse the existing Upload screen
+    return redirect(url_for("upload"))
+    
 @app.post("/admin")
 def admin_save():
     s = get_settings()
