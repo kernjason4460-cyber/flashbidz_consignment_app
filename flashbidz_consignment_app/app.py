@@ -3073,7 +3073,219 @@ def suppliers_edit(sid):
         flash("Saved.")
         return redirect(url_for("suppliers_list"))
     return render_template("supplier_form.html", s=s)
+# =========================
+# QUICK CHECKOUT (SCAN-TO-SELL)
+# =========================
 
+# cart is stored in session as a list of {"item_id": int, "qty": int}
+def _get_checkout_cart():
+    cart = session.get("checkout_cart")
+    if not isinstance(cart, list):
+        cart = []
+    return cart
+
+def _save_checkout_cart(cart):
+    session["checkout_cart"] = cart
+    session.modified = True
+
+def _get_discount_cents():
+    try:
+        return int(session.get("checkout_discount_cents") or 0)
+    except Exception:
+        return 0
+
+def _set_discount_cents(cents_val):
+    session["checkout_discount_cents"] = max(0, int(cents_val or 0))
+    session.modified = True
+
+
+@require_perm("items:sell")
+@app.get("/checkout")
+def checkout_view():
+    """Scanner-friendly checkout screen."""
+    cart = _get_checkout_cart()
+    item_ids = [row["item_id"] for row in cart]
+    items_by_id = {}
+
+    if item_ids:
+        items = Item.query.filter(Item.id.in_(item_ids)).all()
+        items_by_id = {it.id: it for it in items}
+
+    lines = []
+    subtotal_cents = 0
+
+    for row in cart:
+        it = items_by_id.get(row["item_id"])
+        if not it:
+            continue
+        qty = row.get("qty", 1) or 1
+        # Use asking price if set, else price_cents, else cost_cents, else 0
+        price_cents = it.asking_cents or it.price_cents or it.cost_cents or 0
+        line_total = price_cents * qty
+        subtotal_cents += line_total
+
+        lines.append({
+            "item": it,
+            "qty": qty,
+            "price_cents": price_cents,
+            "line_total": line_total,
+        })
+
+    discount_cents = _get_discount_cents()
+    total_cents = max(0, subtotal_cents - discount_cents)
+
+    # Which sound to play after this request (if any)
+    beep = session.pop("checkout_beep", None)
+    today = datetime.utcnow().date()
+
+    return render_template(
+        "checkout.html",
+        lines=lines,
+        subtotal_cents=subtotal_cents,
+        discount_cents=discount_cents,
+        total_cents=total_cents,
+        beep=beep,
+        today=today,
+    )
+
+
+@require_perm("items:sell")
+@app.post("/checkout/scan")
+def checkout_scan():
+    """Scan or type a SKU, add to cart."""
+    sku = (request.form.get("sku") or "").strip()
+    if not sku:
+        flash("Scan or enter a SKU.", "error")
+        session["checkout_beep"] = "error"
+        return redirect(url_for("checkout_view"))
+
+    item = Item.query.filter_by(sku=sku).first()
+    if not item:
+        flash(f"Item with SKU {sku} not found.", "error")
+        session["checkout_beep"] = "error"
+        return redirect(url_for("checkout_view"))
+
+    if item.status == "sold":
+        flash(f"{sku} is already marked SOLD.", "error")
+        session["checkout_beep"] = "error"
+        return redirect(url_for("checkout_view"))
+
+    cart = _get_checkout_cart()
+
+    # Duplicate scan → bump qty + special beep
+    for row in cart:
+        if row["item_id"] == item.id:
+            row["qty"] = row.get("qty", 1) + 1
+            _save_checkout_cart(cart)
+            flash(f"Scanned again: {item.title} (x{row['qty']})", "info")
+            session["checkout_beep"] = "duplicate"
+            return redirect(url_for("checkout_view"))
+
+    # First time in cart
+    cart.append({"item_id": item.id, "qty": 1})
+    _save_checkout_cart(cart)
+    flash(f"Added: {item.title}", "success")
+    session["checkout_beep"] = "ok"
+    return redirect(url_for("checkout_view"))
+
+
+@require_perm("items:sell")
+@app.post("/checkout/remove/<int:item_id>")
+def checkout_remove(item_id):
+    """Undo / void a scanned item (remove from cart)."""
+    cart = _get_checkout_cart()
+    new_cart = [row for row in cart if row["item_id"] != item_id]
+    _save_checkout_cart(new_cart)
+    flash("Removed item from checkout.", "info")
+    session["checkout_beep"] = "void"
+    return redirect(url_for("checkout_view"))
+
+
+@require_perm("items:sell")
+@app.post("/checkout/discount")
+def checkout_discount():
+    """Apply a dollar discount to this cart."""
+    raw = (request.form.get("discount") or "").replace(",", "").strip()
+    cents_val = 0
+    if raw:
+        try:
+            cents_val = int(round(float(raw) * 100))
+        except Exception:
+            cents_val = 0
+    _set_discount_cents(cents_val)
+    flash("Discount updated.", "info")
+    return redirect(url_for("checkout_view"))
+
+
+@require_perm("items:sell")
+@app.post("/checkout/clear")
+def checkout_clear():
+    """Clear entire cart + discount."""
+    _save_checkout_cart([])
+    _set_discount_cents(0)
+    flash("Checkout cart cleared.", "info")
+    session["checkout_beep"] = "void"
+    return redirect(url_for("checkout_view"))
+
+
+@require_perm("items:sell")
+@app.post("/checkout/complete")
+def checkout_complete():
+    """
+    Mark all cart items as SOLD.
+
+    For now:
+    - Each item gets one combined sale price based on quantity.
+    - Discount (if any) is taken off the LAST line.
+    - All items share same buyer & sale date.
+    """
+    cart = _get_checkout_cart()
+    if not cart:
+        flash("Cart is empty.", "error")
+        session["checkout_beep"] = "error"
+        return redirect(url_for("checkout_view"))
+
+    buyer_name = (request.form.get("buyer_name") or "").strip() or None
+    sale_date_str = (request.form.get("sale_date") or "").strip()
+    sale_date = parse_date(sale_date_str) or datetime.utcnow().date()
+
+    discount_cents = _get_discount_cents()
+
+    item_ids = [row["item_id"] for row in cart]
+    items = Item.query.filter(Item.id.in_(item_ids)).all()
+    items_by_id = {it.id: it for it in items}
+
+    # Build line list so we know which is "last"
+    lines = []
+    for row in cart:
+        it = items_by_id.get(row["item_id"])
+        if not it:
+            continue
+        qty = row.get("qty", 1) or 1
+        price_cents = it.asking_cents or it.price_cents or it.cost_cents or 0
+        line_total = price_cents * qty
+        lines.append((it, qty, price_cents, line_total))
+
+    for idx, (it, qty, price_cents, line_total) in enumerate(lines):
+        is_last = (idx == len(lines) - 1)
+        sale_cents = line_total
+        if is_last and discount_cents:
+            sale_cents = max(0, line_total - discount_cents)
+
+        it.status = "sold"
+        it.sale_price_cents = sale_cents
+        it.sale_date = sale_date
+        it.buyer_name = buyer_name
+
+    db.session.commit()
+
+    # clear cart for next customer
+    _save_checkout_cart([])
+    _set_discount_cents(0)
+
+    flash("Sale complete. Items marked SOLD.", "success")
+    session["checkout_beep"] = "ok"
+    return redirect(url_for("items_list"))
 # ---------- SALES ----------
 @app.route("/sales/new", methods=["GET","POST"])
 @require_perm("sales:edit")
