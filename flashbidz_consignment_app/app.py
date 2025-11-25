@@ -671,14 +671,25 @@ def _auto_fill_before_insert(mapper, connection, target):
 @event.listens_for(Item, "after_insert")
 def _auto_fill_after_insert(mapper, connection, target):
     from sqlalchemy import text as sqltext
+
     if not target.sku or target.sku.startswith("TEMP"):
         base = build_sku_from(target)
         sku = base
         i = 1
-        while connection.execute(sqltext("SELECT 1 FROM items WHERE sku = :s"), {"s": sku}).fetchone():
+
+        # Correct table name
+        while connection.execute(
+            sqltext("SELECT 1 FROM items WHERE sku = :s"),
+            {"s": sku}
+        ).fetchone():
             i += 1
             sku = f"{base}-{i}"
-        connection.execute(sqltext("UPDATE item SET sku=:s WHERE id=:id"), {"s": sku, "id": target.id})
+
+        # Correct table name
+        connection.execute(
+            sqltext("UPDATE items SET sku=:s WHERE id=:id"),
+            {"s": sku, "id": target.id}
+        )
 
 # Wire relationships AFTER both classes are defined
 from sqlalchemy.orm import relationship
