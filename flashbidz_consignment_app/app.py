@@ -2375,7 +2375,6 @@ def _csv_contracts_string():
             ct.consignor_id,
             consignor.name if consignor else "",
             ct.status or "",
-            ct.created_at.isoformat() if ct.created_at else "",
             ct.total_items or 0,
             ct.total_estimated_value_cents or 0,
             (ct.notes or "").replace("\n", " ").replace("\r", " "),
