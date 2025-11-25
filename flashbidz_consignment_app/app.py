@@ -1130,7 +1130,35 @@ def item_edit(item_id):
 
     # Re-use the same form template as "New Item"
     return render_template("item_form.html", item=item, consignors=consignors)
-   
+
+@app.get("/items/<int:item_id>/clone")
+@require_perm("items:edit")
+def item_clone(item_id):
+    original = Item.query.get_or_404(item_id)
+
+    # Create new empty item (not yet committed)
+    cloned = Item(
+        title = original.title,
+        category = original.category,
+        ownership = original.ownership,
+        consignor = original.consignor,
+        consignor_id = original.consignor_id,
+        notes = original.notes,
+        cost_cents = original.cost_cents,
+        asking_cents = original.asking_cents,
+        building = original.building,
+        room = original.room,
+        shelf = original.shelf,
+        tote = original.tote,
+        location = original.location,
+        location_detail = original.location_detail,
+        status = "draft"
+    )
+
+    db.session.add(cloned)
+    db.session.commit()
+
+    return redirect(f"/items/{cloned.id}/edit")   
 @require_perm("items:edit")
 @app.post("/items/<int:item_id>/edit")
 def item_update(item_id):
