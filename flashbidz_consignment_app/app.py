@@ -1425,6 +1425,53 @@ def reports():
         })
 
     return render_template("reports.html", summary=summary, ownership=ownership)
+from sqlalchemy import func  # you already import this, just be sure it's there
+
+
+@app.get("/locations")
+@require_perm("items:view")
+def locations_overview():
+    """
+    Summary of inventory by location (building / room / shelf / tote).
+    """
+    # Group by full physical location
+    rows = (
+        db.session.query(
+            Item.building,
+            Item.room,
+            Item.shelf,
+            Item.tote,
+            func.count(Item.id).label("count_items"),
+            func.coalesce(func.sum(Item.cost_cents), 0).label("cost_cents"),
+            func.coalesce(func.sum(Item.sale_price_cents), 0).label("sales_cents"),
+        )
+        .group_by(Item.building, Item.room, Item.shelf, Item.tote)
+        .order_by(
+            Item.building.nullsfirst(),
+            Item.room.nullsfirst(),
+            Item.shelf.nullsfirst(),
+            Item.tote.nullsfirst(),
+        )
+        .all()
+    )
+
+    def cents_to_dollars(c):
+        return (c or 0) / 100.0
+
+    locations = []
+    for r in rows:
+        locations.append({
+            "building": r.building or "",
+            "room": r.room or "",
+            "shelf": r.shelf or "",
+            "tote": r.tote or "",
+            "count_items": r.count_items or 0,
+            "total_cost": cents_to_dollars(r.cost_cents),
+            "total_sales": cents_to_dollars(r.sales_cents),
+        })
+
+    return render_template("locations.html", locations=locations)
+    
 @app.get("/items/<int:item_id>/qrcode")
 def item_qrcode(item_id):
     item = Item.query.get_or_404(item_id)
