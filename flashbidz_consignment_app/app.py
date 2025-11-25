@@ -842,39 +842,141 @@ from sqlalchemy import func
 @require_perm("items:view")
 @app.get("/items")
 def items_list():
-    ...
-    # NEW: optional filter by consignor
-    consignor_id = request.args.get("consignor_id", type=int)
+    """
+    Inventory list with filters:
+    - q: free-text search (title, SKU, notes, category, consignor)
+    - ownership: owned | consigned | internal
+    - status: available | sold
+    - building / room / shelf / tote
+    - category
+    - consignor
+    """
+    # ---- Read filters from query string ----
+    q          = (request.args.get("q") or "").strip()
+    ownership  = (request.args.get("ownership") or "").strip().lower()
+    status     = (request.args.get("status") or "").strip().lower()
+    building   = (request.args.get("building") or "").strip()
+    room       = (request.args.get("room") or "").strip()
+    shelf      = (request.args.get("shelf") or "").strip()
+    tote       = (request.args.get("tote") or "").strip()
+    category   = (request.args.get("category") or "").strip()
+    consignor  = (request.args.get("consignor") or "").strip()
 
-    # Base query
     query = Item.query
 
-    # Apply consignor filter if present
-    if consignor_id:
-        query = query.filter_by(consignor_id=consignor_id)
-
-    # Existing search box support (keep your old logic if needed)
-    q = request.args.get("q", "").strip()
+    # ---- Free-text search ----
     if q:
         like = f"%{q}%"
         query = query.filter(
-            db.or_(
-                Item.name.ilike(like),
-                Item.description.ilike(like),
+            or_(
+                Item.title.ilike(like),
                 Item.sku.ilike(like),
+                Item.notes.ilike(like),
+                Item.category.ilike(like),
+                Item.consignor.ilike(like),
             )
         )
 
-    # Load items (use your existing ordering)
+    # ---- Exact/enum filters ----
+    if ownership:
+        query = query.filter(Item.ownership == ownership)
+
+    if status:
+        query = query.filter(Item.status == status)
+
+    if building:
+        query = query.filter(Item.building == building)
+
+    if room:
+        query = query.filter(Item.room == room)
+
+    if shelf:
+        query = query.filter(Item.shelf == shelf)
+
+    if tote:
+        query = query.filter(Item.tote == tote)
+
+    if category:
+        query = query.filter(Item.category == category)
+
+    if consignor:
+        query = query.filter(Item.consignor == consignor)
+
+    # ---- Order newest first ----
     items = query.order_by(Item.created_at.desc()).all()
+
+    # ---- Totals (based on filtered items) ----
+    def cents_to_dollars(c):
+        return (c or 0) / 100.0
+
+    total_cost_cents   = sum((it.cost_cents or 0) for it in items)
+    total_sales_cents  = sum((it.sale_price_cents or 0) for it in items)
+    # profit = sale - cost on sold items
+    total_profit_cents = sum(
+        ((it.sale_price_cents or 0) - (it.cost_cents or 0))
+        for it in items
+        if it.sale_price_cents is not None
+    )
+    total_consignor_cents = sum(
+        (it.consignor_payout or 0) for it in items
+        if it.consignor_payout is not None
+    )
+    total_house_cents = sum(
+        (it.house_net or 0) for it in items
+        if it.house_net is not None
+    )
+
+    totals = {
+        "count": len(items),
+        "cost":      cents_to_dollars(total_cost_cents),
+        "sales":     cents_to_dollars(total_sales_cents),
+        "profit":    cents_to_dollars(total_profit_cents),
+        "consignor": cents_to_dollars(total_consignor_cents),
+        "house":     cents_to_dollars(total_house_cents),
+    }
+
+    # ---- Dropdown option lists (distinct values) ----
+    # Only non-null, sorted
+    def distinct_vals(column):
+        rows = (
+            db.session.query(column)
+            .filter(column.isnot(None))
+            .filter(column != "")
+            .distinct()
+            .order_by(column.asc())
+            .all()
+        )
+        return [r[0] for r in rows]
+
+    buildings   = distinct_vals(Item.building)
+    rooms       = distinct_vals(Item.room)
+    shelves     = distinct_vals(Item.shelf)
+    totes       = distinct_vals(Item.tote)
+    categories  = distinct_vals(Item.category)
+    consignors  = distinct_vals(Item.consignor)
 
     return render_template(
         "items.html",
         items=items,
-        consignor_id=consignor_id,
-        q=q,
+        totals=totals,
+        # current filter values
+        f_q=q,
+        f_ownership=ownership,
+        f_status=status,
+        f_building=building,
+        f_room=room,
+        f_shelf=shelf,
+        f_tote=tote,
+        f_category=category,
+        f_consignor=consignor,
+        # dropdown choices
+        buildings=buildings,
+        rooms=rooms,
+        shelves=shelves,
+        totes=totes,
+        categories=categories,
+        consignors=consignors,
     )
-
 
     items = q.order_by(Item.created_at.desc()).all()
 
