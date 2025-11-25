@@ -5,78 +5,31 @@
   <title>{{ 'Edit Item' if item else 'New Item' }} - FlashBidz</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-      margin: 0;
-      background: #f6f7f9;
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:900px; margin:0 auto; }
+    form { background:#fff; padding:20px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    label { display:block; margin:10px 0 6px; font-weight:600; }
+    input, select, textarea {
+      width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;
+      font: inherit; box-sizing:border-box;
     }
-    main {
-      padding: 24px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    form {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0,0,0,.06);
-    }
-    label {
-      display: block;
-      margin: 10px 0 6px;
-      font-weight: 600;
-    }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      box-sizing: border-box;
-    }
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .row > div {
-      flex: 1;
-      min-width: 0;
-    }
-    .actions {
-      margin-top: 16px;
-      display: flex;
-      gap: 10px;
-    }
-    .btn {
-      padding: 10px 14px;
-      background: #e60000;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-light {
-      padding: 10px 14px;
-      background: #eee;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      text-decoration: none;
-      color: #333;
-    }
-    .form-row {
-      margin-bottom: 10px;
-    }
+    textarea { min-height:70px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    .row > div { flex:1; min-width:180px; }
+    .actions { margin-top:18px; display:flex; gap:10px; }
+    .btn { padding:10px 14px; background:#e60000; color:#fff; border:none; border-radius:8px; font-weight:700; cursor:pointer; }
+    .btn-light { padding:10px 14px; background:#eee; border:none; border-radius:8px; cursor:pointer; text-decoration:none; }
+    small.help { color:#666; display:block; margin-top:3px; font-size:12px; }
+    h2 { margin-top:18px; font-size:18px; }
   </style>
 </head>
 <body>
   {% include "_navbar.html" %}
-
   <main>
     <h1>{{ 'Edit Item' if item else 'New Item' }}</h1>
 
     <form method="post" action="{{ '/items/' ~ item.id ~ '/edit' if item else '/items/new' }}">
+
       <!-- Title -->
       <label for="title">Title</label>
       <input id="title" name="title" required
@@ -84,23 +37,16 @@
 
       <!-- Ownership + Category -->
       <div class="row">
-        <div class="form-row">
+        <div>
           <label for="ownership">Ownership</label>
+          {% set own = (item.ownership if item else 'owned')|lower %}
           <select name="ownership" id="ownership">
-            {% set own = (item.ownership if item else 'owned')|lower %}
-            <option value="owned" {{ 'selected' if own == 'owned' else '' }}>
-              FlashBidz Owned
-            </option>
-            <option value="consigned" {{ 'selected' if own == 'consigned' else '' }}>
-              Consigned (payout to consignor)
-            </option>
-            <option value="internal" {{ 'selected' if own == 'internal' else '' }}>
-              Internal (Jason / Jennifer / staff)
-            </option>
+            <option value="owned"     {{ 'selected' if own == 'owned' else '' }}>FlashBidz Owned</option>
+            <option value="consigned" {{ 'selected' if own == 'consigned' else '' }}>Consigned (payout to consignor)</option>
+            <option value="internal"  {{ 'selected' if own == 'internal' else '' }}>Internal (Jason / Jennifer / staff)</option>
           </select>
         </div>
-
-        <div class="form-row">
+        <div>
           <label for="category">Category</label>
           <input id="category" name="category"
                  placeholder="Furniture, Electronics, Toys"
@@ -108,71 +54,110 @@
         </div>
       </div>
 
-      <!-- Supplier + Sale date -->
+      <!-- Supplier / Sale date -->
       <div class="row">
-        <div class="form-row">
+        <div>
           <label for="supplier">Supplier (name)</label>
           <input id="supplier" name="supplier"
                  value="{{ (item.supplier or '') if item else '' }}">
+          <small class="help">Optional – where you sourced it from.</small>
         </div>
-        <div class="form-row">
+        <div>
           <label for="sale_date">Sale Date</label>
           <input id="sale_date" type="date" name="sale_date"
-                 value="{{ item.sale_date.isoformat() if item and item.sale_date else '' }}">
+                 value="{{ (item.sale_date.isoformat() if item and item.sale_date else '') }}">
+          <small class="help">Usually left blank until sold.</small>
         </div>
       </div>
 
-      <!-- Cost / Asking -->
+      <!-- Money -->
       <div class="row">
-        <div class="form-row">
+        <div>
           <label for="cost">Cost ($)</label>
           <input id="cost" name="cost" type="number" step="0.01"
                  value="{{ '%.2f'|format(item.cost) if item and item.cost_cents is not none else '' }}"/>
         </div>
-        <div class="form-row">
+        <div>
           <label for="asking">Asking ($)</label>
           <input id="asking" name="asking" type="number" step="0.01"
                  value="{{ '%.2f'|format(item.asking) if item and item.asking is not none else '' }}"/>
         </div>
       </div>
 
-      <!-- NEW: Location fields -->
-      <div class="row">
-        <div class="form-row">
-          <label for="location">Location</label>
-          <input id="location" name="location"
-                 placeholder="Back room, Trailer, Garage, Shelf A, etc."
-                 value="{{ item.location or '' }}"/>
-        </div>
-        <div class="form-row">
-          <label for="location_detail">Location Details</label>
-          <input id="location_detail" name="location_detail"
-                 placeholder="Bin 12, Rack 4, Top shelf, etc."
-                 value="{{ item.location_detail or '' }}"/>
-        </div>
-      </div>
-
-      <!-- Consignor (only when consigned) -->
-      <div class="form-row" id="consignor-row">
-        <label for="consignor">Consignor (if consigned)</label>
-        <select name="consignor" id="consignor">
-          <option value="">-- None / House Owned --</option>
-          {% for c in consignors %}
+      <!-- Consignor (shows only when ownership = consigned) -->
+      <div class="row" id="consignor-row">
+        <div>
+          <label for="consignor">Consignor (if consigned)</label>
+          <select name="consignor" id="consignor">
+            <option value="">-- None / House Owned --</option>
+            {% for c in consignors %}
             <option value="{{ c.name }}"
               {% if item and item.consignor == c.name %}selected{% endif %}>
               {{ c.name }}
             </option>
-          {% endfor %}
-        </select>
-        <small style="color:#666;display:block;margin-top:4px;">
-          Only used when Ownership is set to “Consigned”.
-        </small>
+            {% endfor %}
+          </select>
+          <small class="help">Only used when Ownership is set to “Consigned”.</small>
+        </div>
+      </div>
+
+      <!-- LOCATION SECTION -->
+      <h2>Location in Storage</h2>
+      <div class="row">
+        <div>
+          <label for="building">Building</label>
+          <input id="building" name="building"
+                 placeholder="Main, Storage Unit, Barn"
+                 value="{{ item.building or '' }}">
+        </div>
+        <div>
+          <label for="room">Room / Area</label>
+          <input id="room" name="room"
+                 placeholder="Back room, Garage, Shed"
+                 value="{{ item.room or '' }}">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="shelf">Shelf / Rack</label>
+          <input id="shelf" name="shelf"
+                 placeholder="Rack A3, Shelf 2"
+                 value="{{ item.shelf or '' }}">
+        </div>
+        <div>
+          <label for="tote">Tote / Bin</label>
+          <input id="tote" name="tote"
+                 placeholder="Blue tote 4, Bin C"
+                 value="{{ item.tote or '' }}">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="location">Location Label</label>
+          <input id="location" name="location"
+                 placeholder="e.g., Barn A / Shelf 3 / Blue Tote 2"
+                 value="{{ item.location or '' }}">
+          <small class="help">A single quick code you can yell to each other.</small>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="location_detail">Location Notes</label>
+          <textarea id="location_detail" name="location_detail"
+                    placeholder="Any extra detail (on top of the fridge, top bunk, behind door, etc.)">{{ item.location_detail or '' }}</textarea>
+        </div>
       </div>
 
       <!-- Notes -->
-      <div class="form-row">
-        <label for="notes">Notes</label>
-        <input id="notes" name="notes" value="{{ item.notes or '' }}"/>
+      <div class="row">
+        <div>
+          <label for="notes">Notes</label>
+          <textarea id="notes" name="notes"
+                    placeholder="Condition, bundle info, etc.">{{ item.notes or '' }}</textarea>
+        </div>
       </div>
 
       <div class="actions">
@@ -184,11 +169,11 @@
 
   <script>
     function toggleConsignorRow() {
-      const ownership = document.getElementById("ownership");
+      const ownership   = document.getElementById("ownership");
       const consignorRow = document.getElementById("consignor-row");
       if (!ownership || !consignorRow) return;
 
-      const val = ownership.value.toLowerCase();
+      const val = (ownership.value || "").toLowerCase();
       if (val === "consigned") {
         consignorRow.style.display = "";
       } else {
