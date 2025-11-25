@@ -675,7 +675,7 @@ def _auto_fill_after_insert(mapper, connection, target):
         base = build_sku_from(target)
         sku = base
         i = 1
-        while connection.execute(sqltext("SELECT 1 FROM item WHERE sku = :s"), {"s": sku}).fetchone():
+        while connection.execute(sqltext("SELECT 1 FROM items WHERE sku = :s"), {"s": sku}).fetchone():
             i += 1
             sku = f"{base}-{i}"
         connection.execute(sqltext("UPDATE item SET sku=:s WHERE id=:id"), {"s": sku, "id": target.id})
