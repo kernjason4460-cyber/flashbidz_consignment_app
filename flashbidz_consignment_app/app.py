@@ -27,6 +27,7 @@ import csv
 import urllib.request
 import time
 import re
+import zipfile
 
 # ---- Permission decorator (only admins or explicit perms) ----
 def require_perm(perm_name):
@@ -2251,130 +2252,259 @@ def admin_save():
     flash("Settings saved")
     return redirect(url_for("admin_view"))
 
-@app.get("/admin/export/items.csv")
-def export_items_csv():
-    import csv, io
+# =========================
+# UPGRADE D: DATA EXPORTS
+# =========================
+
+def _csv_items_string():
+    """Return all items as a CSV string."""
     output = io.StringIO()
     w = csv.writer(output)
 
-    # Added building / room / shelf / tote / location_detail
     w.writerow([
-        "id",
-        "sku",
-        "title",
-        "category",
-        "ownership",
-        "cost",
-        "asking",
-        "status",
-        "sale_price",
-        "sale_date",
-        "buyer",
-        "consignor_id",
-        "consignor",
-        "building",
-        "room",
-        "shelf",
-        "tote",
-        "location_detail",
+        "id", "sku", "title", "category", "ownership",
+        "cost_cents", "asking_cents",
+        "status", "sale_price_cents", "sale_date",
+        "buyer_name",
+        "consignor_id", "consignor_name",
         "notes",
-        "created_at",
-        "updated_at",
+        "created_at", "updated_at",
     ])
 
     for it in Item.query.order_by(Item.id.asc()).all():
         w.writerow([
             it.id,
-            it.sku,
+            it.sku or "",
             it.title or "",
             it.category or "",
             it.ownership or "",
-            getattr(it, "cost", None),                 # cost in dollars helper
-            getattr(it, "asking", None),               # asking in dollars helper
+            it.cost_cents or 0,
+            it.asking_cents or 0,
             it.status or "",
-            getattr(it, "sale_price", None),           # sale price in dollars helper
-            it.sale_date or "",
-            getattr(it, "buyer", "") or "",
+            it.sale_price_cents or 0,
+            it.sale_date.isoformat() if it.sale_date else "",
+            getattr(it, "buyer", None) or getattr(it, "buyer_name", None) or "",
             it.consignor_id or "",
             it.consignor or "",
-            getattr(it, "building", "") or "",
-            getattr(it, "room", "") or "",
-            getattr(it, "shelf", "") or "",
-            getattr(it, "tote", "") or "",
-            getattr(it, "location_detail", "") or "",
-            (it.notes or "").replace("\n", " "),
-            it.created_at or "",
-            it.updated_at or "",
-        ])
-
-    from flask import make_response
-    resp = make_response(output.getvalue())
-    resp.headers["Content-Type"] = "text/csv"
-    resp.headers["Content-Disposition"] = "attachment; filename=items_export.csv"
-    return resp
-
-@app.get("/admin/export/locations.csv")
-def export_locations_csv():
-    """
-    Summary CSV: one row per (building, room, shelf, tote) with counts & totals.
-    """
-    import csv, io
-    from sqlalchemy import func
-
-    output = io.StringIO()
-    w = csv.writer(output)
-
-    w.writerow([
-        "building",
-        "room",
-        "shelf",
-        "tote",
-        "items_count",
-        "total_cost",
-        "total_sales",
-    ])
-
-    rows = (
-        db.session.query(
-            Item.building,
-            Item.room,
-            Item.shelf,
-            Item.tote,
-            func.count(Item.id).label("count_items"),
-            func.coalesce(func.sum(Item.cost_cents), 0).label("cost_cents"),
-            func.coalesce(func.sum(Item.sale_price_cents), 0).label("sales_cents"),
-        )
-        .group_by(Item.building, Item.room, Item.shelf, Item.tote)
-        .order_by(
-            Item.building.nullsfirst(),
-            Item.room.nullsfirst(),
-            Item.shelf.nullsfirst(),
-            Item.tote.nullsfirst(),
-        )
-        .all()
-    )
-
-    def cents_to_dollars(c):
-        return (c or 0) / 100.0
-
-    for r in rows:
-        w.writerow([
-            r.building or "",
-            r.room or "",
-            r.shelf or "",
-            r.tote or "",
-            r.count_items or 0,
-            "{:.2f}".format(cents_to_dollars(r.cost_cents)),
-            "{:.2f}".format(cents_to_dollars(r.sales_cents)),
+            (it.notes or "").replace("\n", " ").replace("\r", " "),
+            it.created_at.isoformat() if it.created_at else "",
+            it.updated_at.isoformat() if it.updated_at else "",
         ])
 
     csv_data = output.getvalue()
     output.close()
+    return csv_data
 
-    from flask import make_response
+
+def _csv_consignors_string():
+    """Return all consignors as a CSV string."""
+    output = io.StringIO()
+    w = csv.writer(output)
+
+    w.writerow([
+        "id",
+        "name",
+        "email",
+        "phone",
+        "street",
+        "city",
+        "state",
+        "postal_code",
+        "commission_pct",
+        "advance_balance",
+        "license_image",
+        "sell_at_auction",
+        "sell_in_store",
+        "sell_on_ebay",
+        "notes",
+        "created_at",
+        "updated_at",
+    ])
+
+    for c in Consignor.query.order_by(Consignor.created_at.asc()).all():
+        w.writerow([
+            c.id,
+            c.name or "",
+            c.email or "",
+            c.phone or "",
+            getattr(c, "street", "") or "",
+            getattr(c, "city", "") or "",
+            getattr(c, "state", "") or "",
+            getattr(c, "postal_code", "") or "",
+            c.commission_pct if c.commission_pct is not None else 0,
+            c.advance_balance if c.advance_balance is not None else 0,
+            c.license_image or "",
+            bool(getattr(c, "sell_at_auction", False)),
+            bool(getattr(c, "sell_in_store", False)),
+            bool(getattr(c, "sell_on_ebay", False)),
+            (c.notes or "").replace("\n", " ").replace("\r", " "),
+            c.created_at.isoformat() if c.created_at else "",
+            c.updated_at.isoformat() if c.updated_at else "",
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+    return csv_data
+
+
+def _csv_contracts_string():
+    """Return all contracts as a CSV string."""
+    output = io.StringIO()
+    w = csv.writer(output)
+
+    w.writerow([
+        "id",
+        "consignor_id",
+        "consignor_name",
+        "status",
+        "created_at",
+        "total_items",
+        "total_estimated_value_cents",
+        "notes",
+    ])
+
+    rows = (
+        Contract.query
+        .order_by(Contract.created_at.asc())
+        .all()
+    )
+
+    for ct in rows:
+        consignor = ct.consignor
+        w.writerow([
+            ct.id,
+            ct.consignor_id,
+            consignor.name if consignor else "",
+            ct.status or "",
+            ct.created_at.isoformat() if ct.created_at else "",
+            ct.total_items or 0,
+            ct.total_estimated_value_cents or 0,
+            (ct.notes or "").replace("\n", " ").replace("\r", " "),
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+    return csv_data
+
+
+def _csv_statements_string():
+    """
+    Export SOLD items with consignor payout + house net.
+    This gives you a CSV of all statement-style info.
+    """
+    output = io.StringIO()
+    w = csv.writer(output)
+
+    w.writerow([
+        "sku",
+        "title",
+        "sale_date",
+        "sale_price",
+        "consignor_name",
+        "consignor_payout",
+        "house_net",
+        "rate_percent",
+    ])
+
+    items = (
+        Item.query
+        .filter(Item.status == "sold")
+        .order_by(Item.sale_date.asc().nullslast(), Item.id.asc())
+        .all()
+    )
+
+    for it in items:
+        sale = it.sale_price or 0.0
+        payout = (it.consignor_payout_dollars or 0.0)
+        house = (it.house_net_dollars or 0.0)
+
+        rate_pct = 0.0
+        if sale:
+            try:
+                rate_pct = round((payout / sale) * 100.0, 2)
+            except Exception:
+                rate_pct = 0.0
+
+        w.writerow([
+            it.sku or "",
+            (it.title or "").replace(",", " "),
+            it.sale_date.isoformat() if it.sale_date else "",
+            f"{sale:.2f}",
+            it.consignor or "",
+            f"{payout:.2f}",
+            f"{house:.2f}",
+            rate_pct,
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+    return csv_data
+
+
+@require_perm("reports:view")
+@app.get("/admin/export/items")
+def admin_export_items():
+    """Download Items CSV (used by Admin > Data Export buttons)."""
+    csv_data = _csv_items_string()
     resp = make_response(csv_data)
     resp.headers["Content-Type"] = "text/csv"
-    resp.headers["Content-Disposition"] = "attachment; filename=locations_export.csv"
+    resp.headers["Content-Disposition"] = "attachment; filename=items_export.csv"
+    return resp
+
+
+@require_perm("reports:view")
+@app.get("/admin/export/consignors")
+def admin_export_consignors():
+    """Download Consignors CSV (used by Admin > Data Export buttons)."""
+    csv_data = _csv_consignors_string()
+    resp = make_response(csv_data)
+    resp.headers["Content-Type"] = "text/csv"
+    resp.headers["Content-Disposition"] = "attachment; filename=consignors_export.csv"
+    return resp
+
+
+@require_perm("reports:view")
+@app.get("/admin/export/contracts")
+def admin_export_contracts():
+    """Download Contracts CSV."""
+    csv_data = _csv_contracts_string()
+    resp = make_response(csv_data)
+    resp.headers["Content-Type"] = "text/csv"
+    resp.headers["Content-Disposition"] = "attachment; filename=contracts_export.csv"
+    return resp
+
+
+@require_perm("reports:view")
+@app.get("/admin/export/statements")
+def admin_export_statements():
+    """Download Statements-style CSV (sold items with payouts)."""
+    csv_data = _csv_statements_string()
+    resp = make_response(csv_data)
+    resp.headers["Content-Type"] = "text/csv"
+    resp.headers["Content-Disposition"] = "attachment; filename=statements_export.csv"
+    return resp
+
+
+@require_perm("reports:view")
+@app.get("/admin/export/full-backup")
+def admin_export_full_backup():
+    """
+    Create a ZIP with all CSV exports:
+    - items.csv
+    - consignors.csv
+    - contracts.csv
+    - statements.csv
+    """
+    mem = io.BytesIO()
+    with zipfile.ZipFile(mem, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("items.csv", _csv_items_string())
+        zf.writestr("consignors.csv", _csv_consignors_string())
+        zf.writestr("contracts.csv", _csv_contracts_string())
+        zf.writestr("statements.csv", _csv_statements_string())
+
+    mem.seek(0)
+    resp = Response(mem.getvalue(), mimetype="application/zip")
+    resp.headers["Content-Disposition"] = "attachment; filename=flashbidz_backup.zip"
     return resp
     
 @app.get("/admin/export/consignors.csv")
