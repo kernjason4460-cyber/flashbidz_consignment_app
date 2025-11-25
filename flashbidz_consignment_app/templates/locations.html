@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Locations - FlashBidz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:1100px; margin:0 auto; }
+    h1 { margin-bottom: 6px; }
+    .sub { color:#666; margin-bottom:18px; }
+
+    table { width:100%; border-collapse:collapse; background:#fff;
+            box-shadow:0 4px 16px rgba(0,0,0,.06); border-radius:12px; overflow:hidden; }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; font-size:14px; }
+    th { text-align:left; background:#fafafa; font-weight:600; }
+    tr:hover td { background:#f9fafb; }
+
+    .pill {
+      display:inline-block; padding:2px 8px; border-radius:999px;
+      background:#eee; font-size:11px; text-transform:uppercase; letter-spacing:.04em;
+    }
+    .pill-empty { background:#fdecea; color:#b91c1c; }
+
+    .link-btn {
+      display:inline-block; padding:6px 10px; border-radius:8px;
+      background:#e60000; color:#fff; text-decoration:none; font-size:12px;
+    }
+    .link-btn:hover { opacity:0.9; }
+  </style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+
+  <main>
+    <h1>Inventory Locations</h1>
+    <div class="sub">
+      Quick view of how many items are in each building / room / shelf / tote.
+      Click “View items” to open the Items page filtered to that location.
+    </div>
+
+    {% if locations %}
+    <table>
+      <thead>
+        <tr>
+          <th>Building</th>
+          <th>Room</th>
+          <th>Shelf</th>
+          <th>Tote</th>
+          <th>Items</th>
+          <th>Total Cost</th>
+          <th>Total Sales</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for loc in locations %}
+        <tr>
+          <td>
+            {% if loc.building %}
+              <span class="pill">{{ loc.building }}</span>
+            {% else %}
+              <span class="pill pill-empty">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>{{ loc.room or '' }}</td>
+          <td>{{ loc.shelf or '' }}</td>
+          <td>{{ loc.tote or '' }}</td>
+          <td>{{ loc.count_items }}</td>
+          <td>${{ "%.2f"|format(loc.total_cost) }}</td>
+          <td>${{ "%.2f"|format(loc.total_sales) }}</td>
+          <td>
+            <a class="link-btn"
+               href="{{ url_for('items_list') }}?building={{ loc.building|urlencode }}&room={{ loc.room|urlencode }}&shelf={{ loc.shelf|urlencode }}&tote={{ loc.tote|urlencode }}">
+              View items
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p>No items have location info yet.</p>
+    {% endif %}
+  </main>
+</body>
+</html>
