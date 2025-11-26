@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Fast & Slow Movers – FlashBidz{% endblock %}
+
+{% block content %}
+<h1>Fast &amp; Slow Movers</h1>
+<p>Based on days between listing and sale date.</p>
+
+<h2>Fastest Sellers (Top 20)</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>SKU</th>
+      <th>Item</th>
+      <th style="text-align:right;">Days to Sell</th>
+      <th style="text-align:right;">Sale Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if fast %}
+      {% for row in fast %}
+      <tr>
+        <td>{{ row.sku }}</td>
+        <td>{{ row.title }}</td>
+        <td style="text-align:right;">{{ row.days_to_sell }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(row.sale_price) }}</td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="4">No sold items yet.</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<h2>Slowest Sellers (Top 20)</h2>
+<table class="table">
+  <thead>
+    <tr>
+      <th>SKU</th>
+      <th>Item</th>
+      <th style="text-align:right;">Days to Sell</th>
+      <th style="text-align:right;">Sale Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if slow %}
+      {% for row in slow %}
+      <tr>
+        <td>{{ row.sku }}</td>
+        <td>{{ row.title }}</td>
+        <td style="text-align:right;">{{ row.days_to_sell }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(row.sale_price) }}</td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="4">No sold items yet.</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<p><a href="{{ url_for('reports') }}">← Back to Reports summary</a></p>
+{% endblock %}
