@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Consignor Performance – FlashBidz{% endblock %}
+
+{% block content %}
+<h1>Consignor Performance</h1>
+<p>Lifetime sales grouped by consignor.</p>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Consignor</th>
+      <th style="text-align:right;">Sales</th>
+      <th style="text-align:right;">Units</th>
+      <th style="text-align:right;">Gross Sales</th>
+      <th style="text-align:right;">Estimated Cost</th>
+      <th style="text-align:right;">Profit</th>
+      <th style="text-align:right;">Avg Sale</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if consignors %}
+      {% for c in consignors %}
+      <tr>
+        <td>{{ c.name }}</td>
+        <td style="text-align:right;">{{ c.num_sales }}</td>
+        <td style="text-align:right;">{{ c.units }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(c.gross) }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(c.cost) }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(c.profit) }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(c.avg_sale) }}</td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="7">No sales recorded yet.</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<p><a href="{{ url_for('reports') }}">← Back to Reports summary</a></p>
+{% endblock %}
