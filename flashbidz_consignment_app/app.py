@@ -3098,7 +3098,7 @@ def checkout_undo():
 def checkout_discount():
     """Apply a dollar discount to the whole cart."""
     amount = request.form.get("discount") or ""
-    cents = _dollars_to_cents(amount)
+    cents = _dollars_to_cents(amount) or 0
     session["checkout_discount_cents"] = max(cents, 0)
     session.modified = True
     flash(f"Discount set to ${cents / 100.0:.2f}.", "info")
