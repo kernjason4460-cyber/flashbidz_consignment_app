@@ -88,6 +88,14 @@
             <td>${{ '%.2f'|format(row.sales) }}</td>
             <td>${{ '%.2f'|format(row.profit) }}</td>
           </tr>
+ <hr>
+<h2>Detailed Reports</h2>
+<ul>
+  <li><a href="{{ url_for('report_consignors') }}">Consignor performance</a></li>
+  <li><a href="{{ url_for('report_channels') }}">Channel performance (auction / store / eBay)</a></li>
+  <li><a href="{{ url_for('report_aging') }}">Inventory aging</a></li>
+  <li><a href="{{ url_for('report_movers') }}">Fast &amp; slow movers</a></li>
+</ul>         
           {% else %}
           <tr><td colspan="5" style="text-align:center;color:#666">No data yet.</td></tr>
           {% endfor %}
