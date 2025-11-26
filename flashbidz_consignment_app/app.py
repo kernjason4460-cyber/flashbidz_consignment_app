@@ -3,7 +3,7 @@
 
 # ---- Imports (keep one of each; no duplicates) ----
 import os
-from datetime import datetime
+from datetime import datetime, date
 from io import BytesIO
 import smtplib
 from email.message import EmailMessage
@@ -1468,8 +1468,6 @@ def quick_checkout():
                 "item": item,
                 "price_dollars": f"{dollars_val:.2f}",
             })
-
-   from datetime import date
 
    return render_template("checkout.html", today=date.today())
         cart_items=cart_items,
@@ -3146,7 +3144,7 @@ def checkout_view():
         discount_cents=discount_cents,
         total_cents=total_cents,
         beep=beep,
-        today=today,
+        today=date.today,
     )
 
 
