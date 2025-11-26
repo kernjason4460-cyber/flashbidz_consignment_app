@@ -1286,18 +1286,6 @@ def item_delete(item_id):
     flash("Item deleted")
     return redirect(url_for("items_list"))
 
-
-@require_perm("items:sell")
-@app.get("/items/<int:item_id>/sell")
-def item_sell_form(item_id):
-    ...
-    item = Item.query.get_or_404(item_id)
-    if item.status == "sold":
-        flash("Item already sold")
-        return redirect(url_for("items_list"))
-    return render_template("sell_form.html", item=item)
-
-
 @require_perm("items:sell")
 @app.post("/items/<int:item_id>/sell")
 def item_sell(item_id):
@@ -3117,9 +3105,16 @@ def checkout_view():
         it = items_by_id.get(row["item_id"])
         if not it:
             continue
+
         qty = row.get("qty", 1) or 1
+
         # Use asking price if set, else price_cents, else cost_cents, else 0
-        price_cents = it.asking_cents or it.price_cents or it.cost_cents or 0
+        price_cents = (
+            (it.asking_cents if it.asking_cents is not None else None)
+            or (it.price_cents if it.price_cents is not None else None)
+            or (it.cost_cents or 0)
+        )
+
         line_total = price_cents * qty
         subtotal_cents += line_total
 
@@ -3127,25 +3122,25 @@ def checkout_view():
             "item": it,
             "qty": qty,
             "price_cents": price_cents,
-            "line_total": line_total,
+            "line_total_cents": line_total,
         })
-
-    discount_cents = _get_discount_cents()
-    total_cents = max(0, subtotal_cents - discount_cents)
-
-    # Which sound to play after this request (if any)
-    beep = session.pop("checkout_beep", None)
-    today = datetime.utcnow().date()
 
     return render_template(
         "checkout.html",
-        lines=lines,
-        subtotal_cents=subtotal_cents,
-        discount_cents=discount_cents,
-        total_cents=total_cents,
-        beep=beep,
-        today=date.today,
+        cart_lines=lines,
+        subtotal_dollars=subtotal_cents / 100.0,
+        today=date.today(),
     )
+
+
+@require_perm("items:sell")
+@app.get("/quick-checkout")
+def quick_checkout_view():
+    """
+    Simple alias for scanner kiosk – for now it just reuses /checkout.
+    You can point your iPad to /quick-checkout.
+    """
+    return redirect(url_for("checkout_view"))
 
 
 @require_perm("items:sell")
