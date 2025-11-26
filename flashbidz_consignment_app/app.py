@@ -1457,15 +1457,11 @@ def quick_checkout():
                 "price_dollars": f"{dollars_val:.2f}",
             })
 
-   return render_template("checkout.html", today=date.today())
-        cart_items=cart_items,
-        subtotal=subtotal,
-    )
+ 
 
     db_uri = app.config.get("SQLALCHEMY_DATABASE_URI")
 
 # Create tables if they don't exist
-
 @require_perm("photos:upload")
 @app.get("/upload")
 def upload_form():
@@ -3085,7 +3081,6 @@ def _set_discount_cents(cents_val):
     session["checkout_discount_cents"] = max(0, int(cents_val or 0))
     session.modified = True
 
-
 @require_perm("items:sell")
 @app.get("/checkout")
 def checkout_view():
@@ -3131,6 +3126,15 @@ def checkout_view():
         subtotal_dollars=subtotal_cents / 100.0,
         today=date.today(),
     )
+
+@require_perm("items:sell")
+@app.get("/quick-checkout")
+def quick_checkout_view():
+    """
+    Simple alias for scanner kiosk – for now it just reuses /checkout.
+    You can point your iPad to /quick-checkout.
+    """
+    return redirect(url_for("checkout_view"))
 
 
 @require_perm("items:sell")
