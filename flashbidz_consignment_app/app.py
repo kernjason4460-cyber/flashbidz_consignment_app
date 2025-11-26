@@ -1636,22 +1636,6 @@ def report_consignors():
 
     return render_template("report_consignors.html", consignors=consignor_rows)
 
-@app.get("/reports/consignors")
-@require_perm("reports:view")
-def report_consignors():
-    consignors = (
-        db.session.query(
-            Consignor.name,
-            db.func.count(Item.id).label("count"),
-            db.func.coalesce(db.func.sum(Item.sale_price_cents) / 100.0, 0).label("sales")
-        )
-        .outerjoin(Item, Item.consignor_id == Consignor.id)
-        .group_by(Consignor.id)
-        .order_by(db.desc("sales"))
-        .all()
-    )
-    return render_template("report_consignors.html", rows=consignors)
-
 @app.get("/reports/channels")
 @require_perm("reports:view")
 def report_channels():
