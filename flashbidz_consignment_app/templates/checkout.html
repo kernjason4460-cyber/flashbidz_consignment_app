@@ -6,71 +6,105 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
       margin: 0;
-      background: #f5f6f8;
+      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      background: #111;
+      color: #fff;
     }
     main {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 16px;
     }
     h1 {
-      margin: 0 0 16px;
+      margin: 0 0 12px;
+      font-size: 24px;
     }
-
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      padding: 14px 16px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.04);
-      margin-bottom: 16px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    input, select {
-      font: inherit;
-      padding: 6px 8px;
-      border-radius: 6px;
-      border: 1px solid #ddd;
-      box-sizing: border-box;
-      width: 100%;
-    }
-
-    .row {
+    .top-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 12px;
     }
-    .row > div {
+    .card {
+      background: #1c1c1c;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    .scan-card {
+      flex: 2;
+      min-width: 220px;
+    }
+    .discount-card {
       flex: 1;
       min-width: 180px;
     }
-
-    .btn {
-      display: inline-block;
-      padding: 7px 12px;
-      border-radius: 6px;
-      border: none;
+    label {
+      display: block;
       font-size: 13px;
+      margin-bottom: 4px;
+      color: #ccc;
+    }
+    .scan-input {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 22px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .scan-input:focus {
+      box-shadow: 0 0 0 3px #e60000;
+    }
+    .discount-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 14px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       text-decoration: none;
+      white-space: nowrap;
     }
     .btn-primary {
       background: #e60000;
       color: #fff;
     }
     .btn-secondary {
-      background: #eee;
-      color: #333;
+      background: #333;
+      color: #eee;
     }
-
+    .btn-danger {
+      background: #b00020;
+      color: #fff;
+    }
+    .btn-small {
+      padding: 5px 9px;
+      font-size: 12px;
+    }
+    .cart-card {
+      margin-top: 16px;
+      background: #1c1c1c;
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      overflow-x: auto;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -78,36 +112,74 @@
     }
     th, td {
       padding: 6px 8px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-      vertical-align: middle;
+      border-bottom: 1px solid #333;
     }
     th {
-      background: #fafafa;
+      text-align: left;
       font-weight: 600;
-      font-size: 12px;
-      color: #555;
-      white-space: nowrap;
+      color: #ccc;
     }
     tr:last-child td {
       border-bottom: none;
     }
+    .summary-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .summary-card {
+      flex: 1;
+      min-width: 150px;
+      background: #1c1c1c;
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+    .summary-label {
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 4px;
+    }
+    .summary-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .buyer-form {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .buyer-input {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      flex: 1;
+      min-width: 140px;
+      box-sizing: border-box;
+    }
+    .flash-messages {
+      margin-bottom: 10px;
+    }
+    .flash {
+      padding: 6px 10px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .flash-success { background: #1b5e20; color: #e8f5e9; }
+    .flash-error   { background: #b00020; color: #ffebee; }
+    .flash-info    { background: #283593; color: #e8eaf6; }
 
-    .total-row {
-      text-align: right;
-      font-weight: 700;
-    }
-    .total-label {
-      padding-right: 12px;
-    }
-    .total-value {
-      font-size: 16px;
-    }
-
-    @media (max-width: 700px) {
-      th:nth-child(3),
-      td:nth-child(3) {
-        display: none; /* hide ownership on small screens */
+    @media (max-width: 800px) {
+      h1 {
+        font-size: 20px;
+      }
+      .scan-input {
+        font-size: 20px;
       }
     }
   </style>
@@ -118,117 +190,132 @@
   <main>
     <h1>Quick Checkout</h1>
 
-    <!-- Scan card -->
-    <div class="card">
-      <form method="post">
-        <input type="hidden" name="action" value="scan">
-        <div class="row">
-          <div>
-            <label for="sku-input">Scan SKU (or type manually)</label>
-            <input id="sku-input" name="sku" autocomplete="off" />
-          </div>
-          <div style="align-self:flex-end;">
-            <button type="submit" class="btn btn-primary">Scan / Add</button>
-          </div>
-        </div>
-        <p style="font-size:12px;color:#666;margin-top:6px;">
-          Tip: Click in the SKU box once, then just scan. Your handheld scanner will type the SKU and hit Enter.
-        </p>
-      </form>
+    <div class="flash-messages">
+      {% with msgs = get_flashed_messages(with_categories=true) %}
+        {% if msgs %}
+          {% for cat, msg in msgs %}
+            <div class="flash flash-{{ cat }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
     </div>
 
-    <!-- Cart / items being checked out -->
-    <div class="card">
-      {% if cart_items %}
-        <form method="post" id="checkout-form">
-          <input type="hidden" id="checkout-action" name="action" value="complete">
+    <div class="top-row">
+      <div class="card scan-card">
+        <label for="sku">Scan SKU</label>
+        <form method="post" action="{{ url_for('checkout_scan') }}">
+          <input id="sku" name="sku" class="scan-input"
+                 placeholder="Scan barcode or type SKU and press Enter">
+        </form>
+      </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Title</th>
-                <th>Ownership</th>
-                <th style="width:120px;">Sale Price ($)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for row in cart_items %}
-                {% set it = row.item %}
-                <tr>
-                  <td>{{ it.sku }}</td>
-                  <td>
-                    {{ it.title }}
-                    {% if it.location_display %}
-                      <div style="font-size:11px;color:#777;">
-                        {{ it.location_display }}
-                      </div>
-                    {% endif %}
-                  </td>
-                  <td>{{ (it.ownership or '').capitalize() }}</td>
-                  <td>
-                    <input type="hidden" name="item_id" value="{{ it.id }}">
-                    <input type="number"
-                           step="0.01"
-                           name="price_{{ it.id }}"
-                           value="{{ row.price_dollars }}"
-                           style="width:100%;text-align:right;">
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-
-          <div style="margin-top:12px;" class="row">
-            <div>
-              <label for="buyer_name">Buyer name (optional)</label>
-              <input id="buyer_name" name="buyer_name"
-                     placeholder="Name or notes for who paid">
-            </div>
-            <div>
-              <label for="sale_date">Sale date</label>
-              <input id="sale_date" name="sale_date" type="date"
-                     value="{{ (datetime.utcnow().date().isoformat()) if datetime else '' }}">
-            </div>
-          </div>
-
-          <div style="margin-top:12px;text-align:right;">
-            <div class="total-label">
-              Subtotal / Total Due:
-              <span class="total-value">
-                ${{ "%.2f"|format(subtotal or 0.0) }}
-              </span>
-            </div>
-          </div>
-
-          <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
-            <button type="submit"
-                    class="btn btn-primary"
-                    onclick="document.getElementById('checkout-action').value='complete';">
-              Complete Sale
-            </button>
-            <button type="submit"
-                    class="btn btn-secondary"
-                    onclick="document.getElementById('checkout-action').value='clear';">
-              Clear List
-            </button>
+      <div class="card discount-card">
+        <form method="post" action="{{ url_for('checkout_discount') }}">
+          <label for="discount">Discount (dollars)</label>
+          <input id="discount" name="discount" class="discount-input"
+                 value="{% if discount_cents %}{{ (discount_cents / 100.0) | round(2) }}{% endif %}"
+                 placeholder="0.00">
+          <div style="margin-top: 8px; display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="submit" class="btn btn-secondary btn-small">Apply</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <div class="cart-card">
+      {% if lines %}
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Title</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Line Total</th>
+              <th>Undo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for line in lines %}
+              <tr>
+                <td>{{ line.item.sku }}</td>
+                <td>{{ line.item.title }}</td>
+                <td>{{ line.qty }}</td>
+                <td>{{ line.price_cents | money }}</td>
+                <td>{{ line.line_total | money }}</td>
+                <td>
+                  <form method="post" action="{{ url_for('checkout_remove', item_id=line.item.id) }}">
+                    <button class="btn btn-secondary btn-small" type="submit">Undo</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       {% else %}
-        <p style="margin:0;font-size:13px;color:#555;">
-          No items in checkout yet. Scan a SKU to start.
-        </p>
+        <p style="margin:0; color:#bbb;">No items scanned yet.</p>
       {% endif %}
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="summary-label">Subtotal</div>
+        <div class="summary-value">{{ subtotal_cents | money }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Discount</div>
+        <div class="summary-value">
+          {% if discount_cents %}
+            -{{ discount_cents | money }}
+          {% else %}
+            {{ 0 | money }}
+          {% endif %}
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Total Due</div>
+        <div class="summary-value">{{ total_cents | money }}</div>
+      </div>
+    </div>
+
+    <form class="buyer-form" method="post" action="{{ url_for('checkout_complete') }}">
+      <input class="buyer-input" name="buyer_name" placeholder="Buyer name (optional)">
+      <input class="buyer-input" type="date" name="sale_date"
+             value="{{ today.isoformat() }}">
+      <button type="submit" class="btn btn-primary">Complete Sale &amp; Mark SOLD</button>
+    </form>
+
+    <div style="margin-top:8px;">
+      <form method="post" action="{{ url_for('checkout_clear') }}">
+        <button type="submit" class="btn btn-danger btn-small">Clear Cart</button>
+      </form>
     </div>
   </main>
 
+  <!-- Sound effects (optional; you add these files under static/sounds) -->
+  <audio id="sound-ok" src="{{ url_for('static', filename='sounds/beep-ok.mp3') }}"></audio>
+  <audio id="sound-duplicate" src="{{ url_for('static', filename='sounds/beep-duplicate.mp3') }}"></audio>
+  <audio id="sound-error" src="{{ url_for('static', filename='sounds/beep-error.mp3') }}"></audio>
+  <audio id="sound-void" src="{{ url_for('static', filename='sounds/beep-void.mp3') }}"></audio>
+
   <script>
-    // Auto-focus the SKU input when the page loads
-    window.addEventListener("load", function () {
-      var sku = document.getElementById("sku-input");
-      if (sku) {
-        sku.focus();
-        sku.select();
+    document.addEventListener("DOMContentLoaded", function () {
+      // Keep scan box focused (kiosk-style)
+      var skuInput = document.getElementById("sku");
+      if (skuInput) {
+        skuInput.focus();
+        skuInput.addEventListener("blur", function () {
+          setTimeout(function () { skuInput.focus(); }, 100);
+        });
+      }
+
+      // Play sound if needed
+      var lastBeep = "{{ beep or '' }}";
+      if (lastBeep) {
+        var audio = document.getElementById("sound-" + lastBeep);
+        if (audio) {
+          try { audio.play(); } catch (e) {}
+        }
       }
     });
   </script>
