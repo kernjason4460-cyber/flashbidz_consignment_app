@@ -1522,7 +1522,66 @@ def report_consignors():
 
     return render_template("report_consignors.html", consignors=consignor_rows)
 
+@app.get("/reports/consignors")
+@require_perm("reports:view")
+def report_consignors():
+    consignors = (
+        db.session.query(
+            Consignor.name,
+            db.func.count(Item.id).label("count"),
+            db.func.coalesce(db.func.sum(Item.sale_price_cents) / 100.0, 0).label("sales")
+        )
+        .outerjoin(Item, Item.consignor_id == Consignor.id)
+        .group_by(Consignor.id)
+        .order_by(db.desc("sales"))
+        .all()
+    )
+    return render_template("report_consignors.html", rows=consignors)
 
+@app.get("/reports/channels")
+@require_perm("reports:view")
+def report_channels():
+    by_channel = (
+        db.session.query(
+            Item.channel,
+            db.func.count(Item.id),
+            db.func.coalesce(db.func.sum(Item.sale_price_cents) / 100.0, 0)
+        )
+        .group_by(Item.channel)
+        .all()
+    )
+    return render_template("report_channels.html", rows=by_channel)
+
+@app.get("/reports/aging")
+@require_perm("reports:view")
+def report_aging():
+    rows = (
+        db.session.query(
+            Item,
+            (db.func.DATE("now") - db.func.DATE(Item.created_at)).label("days")
+        )
+        .all()
+    )
+    return render_template("report_aging.html", rows=rows)
+
+@app.get("/reports/movers")
+@require_perm("reports:view")
+def report_movers():
+    movers = (
+        db.session.query(
+            Item.title,
+            Item.sku,
+            Item.sale_price_cents,
+            Item.status,
+            db.func.count(Sale.id).label("qty")
+        )
+        .outerjoin(Sale, Sale.item_id == Item.id)
+        .group_by(Item.id)
+        .order_by(db.desc("qty"))
+        .all()
+    )
+    return render_template("report_movers.html", rows=movers)
+    
 @app.route("/reports/channels")
 @require_perm("reports:view")
 def report_channels():
