@@ -1478,7 +1478,169 @@ def reports():
     return render_template("reports.html", summary=summary, ownership=ownership)
 from sqlalchemy import func  # you already import this, just be sure it's there
 
+# ========= DETAILED REPORTS =========
 
+@app.route("/reports/consignors")
+@require_perm("reports:view")
+def report_consignors():
+    """
+    Consignor performance: lifetime sales by consignor.
+    Uses Sale + Item + Consignor.
+    """
+    rows = (
+        db.session.query(
+            Consignor.id,
+            Consignor.name,
+            func.coalesce(func.sum(Sale.qty), 0).label("units"),
+            func.coalesce(func.count(Sale.id), 0).label("num_sales"),
+            func.coalesce(func.sum(Sale.sale_price_cents), 0).label("gross_cents"),
+            func.coalesce(func.sum((Item.cost_cents or 0) * Sale.qty), 0).label("cost_cents"),
+        )
+        .join(Item, Item.id == Sale.item_id)
+        .outerjoin(Consignor, Consignor.id == Item.consignor_id)
+        .group_by(Consignor.id, Consignor.name)
+        .order_by(func.sum(Sale.sale_price_cents).desc())
+        .all()
+    )
+
+    consignor_rows = []
+    for cid, name, units, num_sales, gross_cents, cost_cents in rows:
+        gross = (gross_cents or 0) / 100.0
+        cost = (cost_cents or 0) / 100.0
+        profit = gross - cost
+        avg_sale = (gross / num_sales) if num_sales else 0.0
+        consignor_rows.append({
+            "id": cid,
+            "name": name or "(No consignor)",
+            "units": units or 0,
+            "num_sales": num_sales or 0,
+            "gross": gross,
+            "cost": cost,
+            "profit": profit,
+            "avg_sale": avg_sale,
+        })
+
+    return render_template("report_consignors.html", consignors=consignor_rows)
+
+
+@app.route("/reports/channels")
+@require_perm("reports:view")
+def report_channels():
+    """
+    Channel performance: auction vs store vs eBay, etc.
+    Based purely on Sale.channel.
+    """
+    rows = (
+        db.session.query(
+            Sale.channel,
+            func.coalesce(func.sum(Sale.qty), 0).label("units"),
+            func.coalesce(func.sum(Sale.sale_price_cents), 0).label("gross_cents"),
+            func.coalesce(func.sum(Sale.shipping_fee_cents), 0).label("shipping_cents"),
+            func.coalesce(func.sum(Sale.marketplace_fee_cents), 0).label("fees_cents"),
+            func.coalesce(func.sum(Sale.tax_cents), 0).label("tax_cents"),
+        )
+        .group_by(Sale.channel)
+        .order_by(func.sum(Sale.sale_price_cents).desc())
+        .all()
+    )
+
+    channel_rows = []
+    for channel, units, gross_cents, ship_cents, fee_cents, tax_cents in rows:
+        gross = (gross_cents or 0) / 100.0
+        shipping = (ship_cents or 0) / 100.0
+        fees = (fee_cents or 0) / 100.0
+        tax = (tax_cents or 0) / 100.0
+        net = gross + shipping - fees - tax
+        channel_rows.append({
+            "channel": channel or "(unspecified)",
+            "units": units or 0,
+            "gross": gross,
+            "shipping": shipping,
+            "fees": fees,
+            "tax": tax,
+            "net": net,
+        })
+
+    return render_template("report_channels.html", channels=channel_rows)
+
+
+@app.route("/reports/aging")
+@require_perm("reports:view")
+def report_aging():
+    """
+    Inventory aging report – unsold items bucketed by age.
+    Uses Item.created_at and status != 'sold'.
+    """
+    today = date.today()
+    items = Item.query.filter(Item.status != "sold").all()
+
+    buckets = {
+        "0–30 days": {"count": 0, "cost_cents": 0},
+        "31–60 days": {"count": 0, "cost_cents": 0},
+        "61–90 days": {"count": 0, "cost_cents": 0},
+        "90+ days": {"count": 0, "cost_cents": 0},
+    }
+
+    for it in items:
+        if not it.created_at:
+            age_days = 0
+        else:
+            age_days = (today - it.created_at.date()).days
+
+        if age_days <= 30:
+            key = "0–30 days"
+        elif age_days <= 60:
+            key = "31–60 days"
+        elif age_days <= 90:
+            key = "61–90 days"
+        else:
+            key = "90+ days"
+
+        buckets[key]["count"] += 1
+        buckets[key]["cost_cents"] += (it.cost_cents or 0)
+
+    # Convert to list with dollars
+    aging_rows = []
+    for label in ["0–30 days", "31–60 days", "61–90 days", "90+ days"]:
+        data = buckets[label]
+        aging_rows.append({
+            "label": label,
+            "count": data["count"],
+            "cost": (data["cost_cents"] or 0) / 100.0,
+        })
+
+    return render_template("report_aging.html", buckets=aging_rows)
+
+
+@app.route("/reports/movers")
+@require_perm("reports:view")
+def report_movers():
+    """
+    Fast vs slow movers – based on Item.created_at and Item.sale_date.
+    Only sold items.
+    """
+    items = Item.query.filter(Item.status == "sold", Item.sale_date.isnot(None)).all()
+
+    rows = []
+    for it in items:
+        if not it.created_at or not it.sale_date:
+            continue
+        days_to_sell = (it.sale_date - it.created_at.date()).days
+        rows.append({
+            "item": it,
+            "sku": it.sku,
+            "title": it.title,
+            "days_to_sell": days_to_sell,
+            "sale_price": (it.sale_price_cents or 0) / 100.0,
+        })
+
+    # Fastest 20 and slowest 20
+    rows_sorted = sorted(rows, key=lambda r: r["days_to_sell"])
+    fast = rows_sorted[:20]
+    slow = list(reversed(rows_sorted))[:20]
+
+    return render_template("report_movers.html", fast=fast, slow=slow)
+    
 @app.get("/locations")
 @require_perm("items:view")
 def locations_overview():
