@@ -3138,16 +3138,6 @@ def quick_checkout_view():
 
 
 @require_perm("items:sell")
-@app.get("/quick-checkout")
-def quick_checkout_view():
-    """
-    Simple alias for scanner kiosk – for now it just reuses /checkout.
-    You can point your iPad to /quick-checkout.
-    """
-    return redirect(url_for("checkout_view"))
-
-
-@require_perm("items:sell")
 @app.post("/checkout/scan")
 def checkout_scan():
     """Scan or type a SKU, add to cart."""
