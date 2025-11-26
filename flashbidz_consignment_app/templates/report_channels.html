@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Channel Performance – FlashBidz{% endblock %}
+
+{% block content %}
+<h1>Channel Performance</h1>
+<p>Lifetime results by sales channel (Auction, Store, eBay, etc.).</p>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Channel</th>
+      <th style="text-align:right;">Units</th>
+      <th style="text-align:right;">Gross Sales</th>
+      <th style="text-align:right;">Shipping</th>
+      <th style="text-align:right;">Marketplace Fees</th>
+      <th style="text-align:right;">Tax</th>
+      <th style="text-align:right;">Net</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if channels %}
+      {% for ch in channels %}
+      <tr>
+        <td>{{ ch.channel }}</td>
+        <td style="text-align:right;">{{ ch.units }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(ch.gross) }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(ch.shipping) }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(ch.fees) }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(ch.tax) }}</td>
+        <td style="text-align:right;">${{ "%.2f"|format(ch.net) }}</td>
+      </tr>
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="7">No sales recorded yet.</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<p><a href="{{ url_for('reports') }}">← Back to Reports summary</a></p>
+{% endblock %}
