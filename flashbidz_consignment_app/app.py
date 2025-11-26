@@ -325,20 +325,30 @@ class User(db.Model):
         return False
 class Consignor(db.Model):
     __tablename__ = "consignors"
-    id         = db.Column(db.Integer, primary_key=True)
-    name       = db.Column(db.String(140), nullable=False, index=True)
-    phone      = db.Column(db.String(50))
-    email      = db.Column(db.String(200))
-    notes      = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    commission_pct = db.Column(db.Float, default=0.0)        # e.g., 35.0 means 35%
-    advance_balance = db.Column(db.Integer, default=0)       # store cents; negative or positive
-    license_image = db.Column(db.String(255))  # path to driver's license image
-    # ✅ NEW – which channels this consignor allows
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+
+    email = db.Column(db.String(255))
+    phone = db.Column(db.String(50))
+
+    street = db.Column(db.String(240))
+    city = db.Column(db.String(120))
+    state = db.Column(db.String(40))
+    postal_code = db.Column(db.String(20))
+
+    notes = db.Column(db.Text)
+
+    commission_pct = db.Column(db.Float, default=0.0)
+    advance_balance = db.Column(db.Float, default=0.0)
+
+    license_image = db.Column(db.String(255))
+
     sell_at_auction = db.Column(db.Boolean, default=True)
-    sell_in_store   = db.Column(db.Boolean, default=False)
-    sell_on_ebay    = db.Column(db.Boolean, default=False)# --- One-time safe schema tweaks for Consignor (Postgres) ---
+    sell_in_store = db.Column(db.Boolean, default=False)
+    sell_on_ebay = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # --- One-time safe schema tweaks for Consignor + Items (Postgres) ---
 with app.app_context():
