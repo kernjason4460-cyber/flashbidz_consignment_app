@@ -1469,8 +1469,9 @@ def quick_checkout():
                 "price_dollars": f"{dollars_val:.2f}",
             })
 
-    return render_template(
-        "checkout.html",
+   from datetime import date
+
+   return render_template("checkout.html", today=date.today())
         cart_items=cart_items,
         subtotal=subtotal,
     )
