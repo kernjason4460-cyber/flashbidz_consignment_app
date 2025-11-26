@@ -12,8 +12,6 @@
         <a href="/upload"    style="color:#fff;text-decoration:none">Upload</a>
         <a href="/consignors" style="color:#fff;text-decoration:none">Consignors</a>
         <a href="/locations" style="color:#fff;text-decoration:none">Locations</a>
-        <a href="{{ url_for('checkout_view') }}"
-           style="color:#fff;text-decoration:none">Checkout</a>
         {% if g.user and (g.user.role == 'admin' or g.user.has_perm('items:sell')) %}
           <a href="{{ url_for('checkout_view') }}">Checkout</a>
         {% endif %}
