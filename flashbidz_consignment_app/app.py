@@ -1478,6 +1478,120 @@ def reports():
     return render_template("reports.html", summary=summary, ownership=ownership)
 from sqlalchemy import func  # you already import this, just be sure it's there
 
+@app.get("/reports/consignors")
+@require_perm("reports:view")
+def report_consignors():
+    """Sales and items grouped by consignor."""
+    # Join Consignor -> Item -> Sale (outer join so consignors with no sales still show)
+    rows = (
+        db.session.query(
+            Consignor.id,
+            Consignor.name,
+            db.func.count(Item.id).label("item_count"),
+            db.func.coalesce(db.func.sum(Sale.sale_price_cents), 0).label("sale_cents"),
+        )
+        .outerjoin(Item, Item.consignor_id == Consignor.id)
+        .outerjoin(Sale, Sale.item_id == Item.id)
+        .group_by(Consignor.id, Consignor.name)
+        .order_by(db.desc("sale_cents"))
+        .all()
+    )
+
+    # Convert cents → dollars in Python for easier formatting in the template
+    result = []
+    for r in rows:
+        result.append({
+            "id": r.id,
+            "name": r.name,
+            "item_count": r.item_count,
+            "sales_dollars": (r.sale_cents or 0) / 100.0,
+        })
+
+    return render_template("report_consignors.html", rows=result)
+
+@app.get("/reports/channels")
+@require_perm("reports:view")
+def report_channels():
+    """Totals by sales channel (auction, store, eBay, etc.)."""
+    rows = (
+        db.session.query(
+            Sale.channel,
+            db.func.count(Sale.id).label("sale_count"),
+            db.func.coalesce(db.func.sum(Sale.sale_price_cents), 0).label("sale_cents"),
+        )
+        .group_by(Sale.channel)
+        .order_by(db.desc("sale_cents"))
+        .all()
+    )
+
+    result = []
+    for r in rows:
+        result.append({
+            "channel": r.channel or "Unknown",
+            "sale_count": r.sale_count,
+            "sales_dollars": (r.sale_cents or 0) / 100.0,
+        })
+
+    return render_template("report_channels.html", rows=result)
+
+from datetime import date  # you already import datetime; this can go up top once
+
+@app.get("/reports/aging")
+@require_perm("reports:view")
+def report_aging():
+    """Age of each item in days since created."""
+    items = (
+        Item.query
+        .order_by(Item.created_at.asc())
+        .all()
+    )
+
+    today = date.today()
+    rows = []
+    for it in items:
+        created = it.created_at.date() if it.created_at else today
+        days_on_shelf = (today - created).days
+        rows.append({
+            "item": it,
+            "sku": it.sku,
+            "status": it.status,
+            "created": created,
+            "days_on_shelf": days_on_shelf,
+        })
+
+    # Template can group/sort however you like
+    return render_template("report_aging.html", rows=rows, today=today)
+
+@app.get("/reports/movers")
+@require_perm("reports:view")
+def report_movers():
+    """Fast / slow movers based on how many times an item sold."""
+    rows = (
+        db.session.query(
+            Item.id,
+            Item.title,
+            Item.sku,
+            db.func.count(Sale.id).label("sale_count"),
+            db.func.coalesce(db.func.sum(Sale.sale_price_cents), 0).label("sale_cents"),
+        )
+        .outerjoin(Sale, Sale.item_id == Item.id)
+        .group_by(Item.id, Item.title, Item.sku)
+        .order_by(db.desc("sale_count"), db.desc("sale_cents"))
+        .all()
+    )
+
+    result = []
+    for r in rows:
+        result.append({
+            "id": r.id,
+            "title": r.title,
+            "sku": r.sku,
+            "sale_count": r.sale_count,
+            "sales_dollars": (r.sale_cents or 0) / 100.0,
+        })
+
+    return render_template("report_movers.html", rows=result)
+    
 # ========= DETAILED REPORTS =========
 
 @app.route("/reports/consignors")
