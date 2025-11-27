@@ -1549,11 +1549,15 @@ def report_consignors():
             "profit": sales - cost,
         })
 
-       # CSV export
+    # CSV export
     if request.args.get("export") == "csv":
-        return _csv_response("report_consignors.csv", rows)
+        return _csv_response("report_consignors.csv", consignor_rows)
 
-    return render_template("report_consignors.html", rows=rows, summary=summary)
+    return render_template(
+        "report_consignors.html",
+        rows=consignor_rows,
+        summary=summary
+    )
 
 
 # ---------- CHANNEL PERFORMANCE REPORT ----------
@@ -1636,9 +1640,13 @@ def report_channels():
         })
 
        if request.args.get("export") == "csv":
-        return _csv_response("report_channels.csv", rows)
+    return _csv_response("report_channels.csv", channel_rows)
 
-    return render_template("report_channels.html", rows=rows, summary=summary)
+    return render_template(
+    "report_channels.html",
+    rows=channel_rows,
+    summary=summary
+)
 
 @app.route("/reports/aging")
 @require_perm("reports:view")
@@ -1685,10 +1693,15 @@ def report_aging():
             "cost": (data["cost_cents"] or 0) / 100.0,
         })
 
-        if request.args.get("export") == "csv":
-        return _csv_response("report_aging.csv", rows)
+      # CSV export
+if request.args.get("export") == "csv":
+    return _csv_response("report_aging.csv", aging_rows)
 
-    return render_template("report_aging.html", rows=rows, summary=summary)
+return render_template(
+    "report_aging.html",
+    rows=aging_rows,
+    summary=summary
+)
 
 
 @app.route("/reports/movers")
@@ -1718,10 +1731,18 @@ def report_movers():
     fast = rows_sorted[:20]
     slow = list(reversed(rows_sorted))[:20]
 
-        if request.args.get("export") == "csv":
+          # CSV export (all movers)
+    if request.args.get("export") == "csv":
         return _csv_response("report_movers.csv", rows)
 
-    return render_template("report_movers.html", rows=rows, summary=summary)
+    # HTML view – pass full list plus fastest/slowest
+    return render_template(
+        "report_movers.html",
+        rows=rows,
+        fast=fast,
+        slow=slow,
+        summary=summary,
+    )
     
 @app.get("/locations")
 @require_perm("items:view")
