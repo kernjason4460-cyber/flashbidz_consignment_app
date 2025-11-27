@@ -8,7 +8,32 @@
     body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
     main { padding:24px; max-width:1100px; margin:0 auto; }
     h1 { margin:0 0 16px; }
-    .top-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+    .top-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:16px;
+      flex-wrap:wrap;
+    }
+    .left-actions {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .search-form {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .search-form input[type="text"] {
+      padding:8px 10px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      min-width:220px;
+    }
     .btn {
       display:inline-block;
       padding:8px 14px;
@@ -22,8 +47,14 @@
     .btn-primary { background:#e60000; color:#fff; }
     .btn-secondary { background:#eee; color:#333; }
     .btn-danger { background:#b00020; color:#fff; }
-    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden;
-            box-shadow:0 4px 16px rgba(0,0,0,.05); }
+    table {
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 4px 16px rgba(0,0,0,.05);
+    }
     th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
     th { background:#fafafa; font-weight:700; }
     tr:last-child td { border-bottom:none; }
@@ -37,8 +68,21 @@
 
   <main>
     <div class="top-row">
-      <h1>Consignors</h1>
-      <a class="btn btn-primary" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
+      <div class="left-actions">
+        <h1>Consignors</h1>
+        <a class="btn btn-primary" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
+      </div>
+
+      <form class="search-form" method="get" action="{{ url_for('consignors_list') }}">
+        <input type="text"
+               name="q"
+               placeholder="Search name, email, or phone…"
+               value="{{ q or '' }}">
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {% if q %}
+          <a class="btn btn-secondary" href="{{ url_for('consignors_list') }}">Clear</a>
+        {% endif %}
+      </form>
     </div>
 
     <table>
@@ -94,7 +138,11 @@
         {% else %}
           <tr>
             <td colspan="8" style="text-align:center; padding:20px; color:#666;">
-              No consignors yet.
+              {% if q %}
+                No consignors found matching "<strong>{{ q }}</strong>".
+              {% else %}
+                No consignors yet.
+              {% endif %}
             </td>
           </tr>
         {% endif %}
