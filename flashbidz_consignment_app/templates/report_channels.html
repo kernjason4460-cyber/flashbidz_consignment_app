@@ -1,40 +1,53 @@
-{% extends "base.html" %}
-{% block title %}Channel Performance – FlashBidz{% endblock %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Channel Performance - FlashBidz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:1100px; margin:0 auto; }
+    h1 { margin:0 0 16px; }
+    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
+    th { background:#fafafa; font-weight:700; }
+  </style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+  <main>
+    <h1>Channel Performance</h1>
 
-{% block content %}
-<h1>Channel Performance</h1>
-<p>Lifetime results by sales channel (Auction, Store, eBay, etc.).</p>
-
-<table class="table">
-  <thead>
-    <tr>
-      <th>Channel</th>
-      <th style="text-align:right;">Units</th>
-      <th style="text-align:right;">Gross Sales</th>
-      <th style="text-align:right;">Shipping</th>
-      <th style="text-align:right;">Marketplace Fees</th>
-      <th style="text-align:right;">Tax</th>
-      <th style="text-align:right;">Net</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% if channels %}
-      {% for ch in channels %}
-      <tr>
-        <td>{{ ch.channel }}</td>
-        <td style="text-align:right;">{{ ch.units }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(ch.gross) }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(ch.shipping) }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(ch.fees) }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(ch.tax) }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(ch.net) }}</td>
-      </tr>
-      {% endfor %}
-    {% else %}
-      <tr><td colspan="7">No sales recorded yet.</td></tr>
-    {% endif %}
-  </tbody>
-</table>
-
-<p><a href="{{ url_for('reports') }}">← Back to Reports summary</a></p>
-{% endblock %}
+    <table>
+      <thead>
+        <tr>
+          <th>Channel</th>
+          <th>Sales Count</th>
+          <th>Sales</th>
+          <th>Shipping</th>
+          <th>Marketplace Fees</th>
+          <th>Tax</th>
+          <th>Net</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.channel }}</td>
+          <td>{{ r.count }}</td>
+          <td>${{ '%.2f'|format(r.sales) }}</td>
+          <td>${{ '%.2f'|format(r.shipping) }}</td>
+          <td>${{ '%.2f'|format(r.fees) }}</td>
+          <td>${{ '%.2f'|format(r.tax) }}</td>
+          <td>${{ '%.2f'|format(r.net) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align:center;color:#666">No sales recorded yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>
