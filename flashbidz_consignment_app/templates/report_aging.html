@@ -4,7 +4,15 @@
 {% block content %}
 <h1>Inventory Aging</h1>
 <p>Unsold inventory grouped by how long it has been listed.</p>
-
+<p>
+  <a class="btn"
+     href="{{ url_for('report_aging',
+                      start=summary.start,
+                      end=summary.end,
+                      export='csv') }}">
+    Export CSV
+  </a>
+</p>
 <table class="table">
   <thead>
     <tr>
