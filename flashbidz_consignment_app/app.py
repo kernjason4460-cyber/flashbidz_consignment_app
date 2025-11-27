@@ -2648,6 +2648,27 @@ def admin_save():
     flash("Settings saved")
     return redirect(url_for("admin_view"))
 
+@app.post("/consignors/<int:consignor_id>/delete")
+@require_perm("consignors_edit")
+def consignor_delete(consignor_id):
+    """Delete a consignor, but only if they have no items."""
+    c = Consignor.query.get_or_404(consignor_id)
+
+    # Don't allow deleting a consignor that still has items
+    item_count = Item.query.filter_by(consignor_id=c.id).count()
+    if item_count > 0:
+        flash(
+            f"Cannot delete {c.name}: they still have {item_count} item(s).",
+            "error",
+        )
+        # 👇 change 'consignors_list' to your actual list endpoint name if needed
+        return redirect(url_for("consignors_list"))
+
+    db.session.delete(c)
+    db.session.commit()
+    flash("Consignor deleted.", "success")
+    # 👇 same here – use the correct endpoint for your consignor list page
+    return redirect(url_for("consignors_list"))
 # =========================
 # UPGRADE D: DATA EXPORTS
 # =========================
