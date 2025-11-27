@@ -1478,15 +1478,6 @@ def reports():
     return render_template("reports.html", summary=summary, ownership=ownership)
 from sqlalchemy import func  # you already import this, just be sure it's there
 
-@app.get("/reports/channels")
-@require_perm("reports:view")
-
-
-
-@app.get("/reports/aging")
-@require_perm("reports:view")
-
-
 # ========= DETAILED REPORTS =========
 
 @app.route("/reports/consignors")
