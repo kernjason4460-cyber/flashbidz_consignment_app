@@ -1667,29 +1667,50 @@ def report_channels():
         rows=channel_rows,
         summary=summary,
     )
-@app.route("/reports/aging")
+@app.get("/reports/aging")
 @require_perm("reports:view")
 def report_aging():
-    """
-    Inventory aging report – unsold items bucketed by age.
-    Uses Item.created_at and status != 'sold'.
-    """
-    today = date.today()
-    items = Item.query.filter(Item.status != "sold").all()
+    """Inventory aging – how long unsold items have been listed."""
 
+    # Optional filters on created_at, mostly for consistency with other reports
+    start = (request.args.get("start") or "").strip()
+    end   = (request.args.get("end") or "").strip()
+
+    item_q = Item.query.filter(Item.status != "sold")
+    start_date = None
+    end_date = None
+
+    if start:
+        try:
+            start_date = datetime.strptime(start, "%Y-%m-%d").date()
+            item_q = item_q.filter(Item.created_at >= start_date)
+        except Exception:
+            start_date = None
+
+    if end:
+        try:
+            end_date = datetime.strptime(end, "%Y-%m-%d").date()
+            end_dt = datetime.combine(end_date, datetime.max.time())
+            item_q = item_q.filter(Item.created_at <= end_dt)
+        except Exception:
+            end_date = None
+
+    items = item_q.all()
+    today = date.today()
+
+    # Buckets for aging
     buckets = {
-        "0–30 days": {"count": 0, "cost_cents": 0},
+        "0–30 days":  {"count": 0, "cost_cents": 0},
         "31–60 days": {"count": 0, "cost_cents": 0},
         "61–90 days": {"count": 0, "cost_cents": 0},
-        "90+ days": {"count": 0, "cost_cents": 0},
+        "90+ days":   {"count": 0, "cost_cents": 0},
     }
 
     for it in items:
         if not it.created_at:
-            age_days = 0
-        else:
-            age_days = (today - it.created_at.date()).days
+            continue
 
+        age_days = (today - it.created_at.date()).days
         if age_days <= 30:
             key = "0–30 days"
         elif age_days <= 60:
@@ -1702,26 +1723,37 @@ def report_aging():
         buckets[key]["count"] += 1
         buckets[key]["cost_cents"] += (it.cost_cents or 0)
 
-    # Convert to list with dollars
+    # Convert to list with dollar amounts
     aging_rows = []
     for label in ["0–30 days", "31–60 days", "61–90 days", "90+ days"]:
         data = buckets[label]
         aging_rows.append({
             "label": label,
             "count": data["count"],
-            "cost": (data["cost_cents"] or 0) / 100.0,
+            "cost":  (data["cost_cents"] or 0) / 100.0,
         })
+
+    # Summary for header
+    total_items = sum(r["count"] for r in aging_rows)
+    total_cost  = sum(r["cost"] for r in aging_rows)
+
+    summary = {
+        "start":       start_date,
+        "end":         end_date,
+        "total_items": total_items,
+        "total_cost":  total_cost,
+    }
 
     # CSV export
     if request.args.get("export") == "csv":
         return _csv_response("report_aging.csv", aging_rows)
 
+    # HTML view
     return render_template(
         "report_aging.html",
         rows=aging_rows,
         summary=summary,
     )
-
 
 @app.get("/reports/movers")
 @require_perm("reports:view")
