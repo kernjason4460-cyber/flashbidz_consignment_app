@@ -1481,7 +1481,7 @@ from sqlalchemy import func  # you already import this, just be sure it's there
 @app.get("/reports/channels")
 @require_perm("reports:view")
 
-from datetime import date  # you already import datetime; this can go up top once
+from datetime import date  # you already import datetime;
 
 @app.get("/reports/aging")
 @require_perm("reports:view")
