@@ -1549,14 +1549,14 @@ def report_consignors():
             "profit": sales - cost,
         })
 
-    # CSV export
+       # CSV export
     if request.args.get("export") == "csv":
         return _csv_response("report_consignors.csv", consignor_rows)
 
     return render_template(
         "report_consignors.html",
         rows=consignor_rows,
-        summary=summary
+        summary=summary,
     )
 
 
@@ -1639,15 +1639,15 @@ def report_channels():
             "net":     net,
         })
 
-       if request.args.get("export") == "csv":
-    return _csv_response("report_channels.csv", channel_rows)
+    # CSV export
+    if request.args.get("export") == "csv":
+        return _csv_response("report_channels.csv", channel_rows)
 
     return render_template(
-    "report_channels.html",
-    rows=channel_rows,
-    summary=summary
-)
-
+        "report_channels.html",
+        rows=channel_rows,
+        summary=summary,
+    )
 @app.route("/reports/aging")
 @require_perm("reports:view")
 def report_aging():
@@ -1693,15 +1693,15 @@ def report_aging():
             "cost": (data["cost_cents"] or 0) / 100.0,
         })
 
-      # CSV export
-if request.args.get("export") == "csv":
-    return _csv_response("report_aging.csv", aging_rows)
+    # CSV export
+    if request.args.get("export") == "csv":
+        return _csv_response("report_aging.csv", aging_rows)
 
-return render_template(
-    "report_aging.html",
-    rows=aging_rows,
-    summary=summary
-)
+    return render_template(
+        "report_aging.html",
+        rows=aging_rows,
+        summary=summary,
+    )
 
 
 @app.route("/reports/movers")
@@ -1713,7 +1713,7 @@ def report_movers():
     """
     items = Item.query.filter(Item.status == "sold", Item.sale_date.isnot(None)).all()
 
-    rows = []
+       rows = []
     for it in items:
         if not it.created_at or not it.sale_date:
             continue
@@ -1726,7 +1726,7 @@ def report_movers():
             "sale_price": (it.sale_price_cents or 0) / 100.0,
         })
 
-       # Fastest 20 and slowest 20
+    # Fastest 20 and slowest 20
     rows_sorted = sorted(rows, key=lambda r: r["days_to_sell"])
     fast = rows_sorted[:20]
     slow = list(reversed(rows_sorted))[:20]
@@ -1735,7 +1735,7 @@ def report_movers():
     if request.args.get("export") == "csv":
         return _csv_response("report_movers.csv", rows)
 
-    # HTML view – pass full list plus fastest/slowest
+    # HTML view
     return render_template(
         "report_movers.html",
         rows=rows,
