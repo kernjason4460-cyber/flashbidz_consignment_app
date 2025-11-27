@@ -1486,79 +1486,85 @@ from sqlalchemy import func
 @app.get("/reports/consignors")
 @require_perm("reports:view")
 def report_consignors():
-    """
-    Show per-consignor performance:
-    - number of sold items
-    - total cost
-    - total sales
-    - profit
-    """
-    # Optional date filters (by Item.sale_date)
-    start_str = (request.args.get("start") or "").strip()
-    end_str   = (request.args.get("end") or "").strip()
+    """Consignor performance report."""
+
+    # Optional date filters for SOLD items
+    start = (request.args.get("start") or "").strip()
+    end   = (request.args.get("end") or "").strip()
 
     sold_q = Item.query.filter(Item.status == "sold")
 
-    start_date = end_date = None
+    start_date = None
+    end_date = None
 
-    if start_str:
+    if start:
         try:
-            start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
+            start_date = datetime.strptime(start, "%Y-%m-%d").date()
             sold_q = sold_q.filter(Item.sale_date >= start_date)
-        except ValueError:
+        except Exception:
             start_date = None
 
-    if end_str:
+    if end:
         try:
-            end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end, "%Y-%m-%d").date()
             sold_q = sold_q.filter(Item.sale_date <= end_date)
-        except ValueError:
+        except Exception:
             end_date = None
 
-    # Subquery of sold items with consignor_id + cents
-    sold_sub = sold_q.with_entities(
-        Item.consignor_id.label("consignor_id"),
-        Item.cost_cents.label("cost_cents"),
-        Item.sale_price_cents.label("sale_cents"),
-    ).subquery()
+    # Aggregate by consignor
+    sold_sub = (
+        sold_q.with_entities(
+            Item.consignor_id.label("consignor_id"),
+            func.count(Item.id).label("count"),
+            func.coalesce(func.sum(Item.cost_cents), 0).label("cost_cents"),
+            func.coalesce(func.sum(Item.sale_price_cents), 0).label("sale_cents"),
+        )
+        .group_by(Item.consignor_id)
+        .subquery()
+    )
 
     rows = (
         db.session.query(
-            Consignor.id.label("id"),
-            Consignor.name.label("name"),
-            func.count(sold_sub.c.consignor_id).label("count"),
-            func.coalesce(func.sum(sold_sub.c.cost_cents), 0).label("cost_cents"),
-            func.coalesce(func.sum(sold_sub.c.sale_cents), 0).label("sale_cents"),
+            Consignor.id,
+            Consignor.name,
+            sold_sub.c.count,
+            sold_sub.c.cost_cents,
+            sold_sub.c.sale_cents,
         )
-        .outerjoin(sold_sub, sold_sub.c.consignor_id == Consignor.id)
-        .group_by(Consignor.id, Consignor.name)
-        .order_by(func.coalesce(func.sum(sold_sub.c.sale_cents), 0).desc())
+        .outerjoin(sold_sub, Consignor.id == sold_sub.c.consignor_id)
+        .order_by(func.coalesce(sold_sub.c.sale_cents, 0).desc())
         .all()
     )
 
     consignor_rows = []
     for r in rows:
-        cost = (r.cost_cents or 0) / 100.0
+        cost  = (r.cost_cents or 0) / 100.0
         sales = (r.sale_cents or 0) / 100.0
         consignor_rows.append({
-            "id": r.id,
-            "name": r.name,
-            "count": r.count,
-            "cost": cost,
+            "id":    r.id,
+            "name":  r.name,
+            "count": r.count or 0,
+            "cost":  cost,
             "sales": sales,
             "profit": sales - cost,
         })
 
-       # CSV export
+    # Summary for the template (and to show in the header)
+    summary = {
+        "start": start_date,
+        "end":   end_date,
+    }
+
+    # CSV export
     if request.args.get("export") == "csv":
         return _csv_response("report_consignors.csv", consignor_rows)
 
+    # HTML view
     return render_template(
         "report_consignors.html",
         rows=consignor_rows,
         summary=summary,
     )
-
 
 # ---------- CHANNEL PERFORMANCE REPORT ----------
 @app.get("/reports/channels")
