@@ -3361,7 +3361,26 @@ def checkout_clear():
     session["checkout_beep"] = "ok"
     return redirect(url_for("checkout_view"))
 
+def _csv_response(filename: str, rows: list[dict]):
+    """Return a CSV file download from a list of dict rows."""
+    # Figure out column order from the rows
+    fieldnames: list[str] = []
+    for row in rows:
+        for key in row.keys():
+            if key not in fieldnames:
+                fieldnames.append(key)
 
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(row)
+
+    resp = make_response(buf.getvalue())
+    resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+    resp.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
+    
 def _csv_response(filename: str, rows: list[dict]):
     """Turn a list of dicts into a CSV download."""
     import io
