@@ -15,7 +15,7 @@ import io
 from flask import make_response
 from flask import Response
 from flask_login import login_required, current_user
-
+from io import StringIO
 from flask import Flask, request, session, redirect, url_for, render_template, flash, current_app, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
@@ -1549,12 +1549,11 @@ def report_consignors():
             "profit": sales - cost,
         })
 
-    return render_template(
-        "report_consignors.html",
-        rows=consignor_rows,
-        start=start_date,
-        end=end_date,
-    )
+       # CSV export
+    if request.args.get("export") == "csv":
+        return _csv_response("report_consignors.csv", rows)
+
+    return render_template("report_consignors.html", rows=rows, summary=summary)
 
 
 # ---------- CHANNEL PERFORMANCE REPORT ----------
@@ -1636,7 +1635,11 @@ def report_channels():
             "net":     net,
         })
 
-    return render_template("report_channels.html", rows=channel_rows)
+       if request.args.get("export") == "csv":
+        return _csv_response("report_channels.csv", rows)
+
+    return render_template("report_channels.html", rows=rows, summary=summary)
+
 @app.route("/reports/aging")
 @require_perm("reports:view")
 def report_aging():
@@ -1682,7 +1685,10 @@ def report_aging():
             "cost": (data["cost_cents"] or 0) / 100.0,
         })
 
-    return render_template("report_aging.html", buckets=aging_rows)
+        if request.args.get("export") == "csv":
+        return _csv_response("report_aging.csv", rows)
+
+    return render_template("report_aging.html", rows=rows, summary=summary)
 
 
 @app.route("/reports/movers")
@@ -1712,7 +1718,10 @@ def report_movers():
     fast = rows_sorted[:20]
     slow = list(reversed(rows_sorted))[:20]
 
-    return render_template("report_movers.html", fast=fast, slow=slow)
+        if request.args.get("export") == "csv":
+        return _csv_response("report_movers.csv", rows)
+
+    return render_template("report_movers.html", rows=rows, summary=summary)
     
 @app.get("/locations")
 @require_perm("items:view")
