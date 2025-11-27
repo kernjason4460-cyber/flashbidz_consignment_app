@@ -1,40 +1,58 @@
-{% extends "base.html" %}
-{% block title %}Consignor Performance – FlashBidz{% endblock %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Consignor Performance - FlashBidz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:1100px; margin:0 auto; }
+    h1 { margin:0 0 16px; }
+    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
+    th { background:#fafafa; font-weight:700; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#eee; }
+  </style>
+</head>
+<body>
+  {% include "_navbar.html" %}
+  <main>
+    <h1>Consignor Performance</h1>
 
-{% block content %}
-<h1>Consignor Performance</h1>
-<p>Lifetime sales grouped by consignor.</p>
-
-<table class="table">
-  <thead>
-    <tr>
-      <th>Consignor</th>
-      <th style="text-align:right;">Sales</th>
-      <th style="text-align:right;">Units</th>
-      <th style="text-align:right;">Gross Sales</th>
-      <th style="text-align:right;">Estimated Cost</th>
-      <th style="text-align:right;">Profit</th>
-      <th style="text-align:right;">Avg Sale</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% if consignors %}
-      {% for c in consignors %}
-      <tr>
-        <td>{{ c.name }}</td>
-        <td style="text-align:right;">{{ c.num_sales }}</td>
-        <td style="text-align:right;">{{ c.units }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(c.gross) }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(c.cost) }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(c.profit) }}</td>
-        <td style="text-align:right;">${{ "%.2f"|format(c.avg_sale) }}</td>
-      </tr>
-      {% endfor %}
-    {% else %}
-      <tr><td colspan="7">No sales recorded yet.</td></tr>
+    {% if start or end %}
+      <p>
+        Date range:
+        {% if start %} from {{ start }}{% endif %}
+        {% if end %} to {{ end }}{% endif %}
+      </p>
     {% endif %}
-  </tbody>
-</table>
 
-<p><a href="{{ url_for('reports') }}">← Back to Reports summary</a></p>
-{% endblock %}
+    <table>
+      <thead>
+        <tr>
+          <th>Consignor</th>
+          <th>Sold Items</th>
+          <th>Total Cost</th>
+          <th>Total Sales</th>
+          <th>Profit</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.name }}</td>
+          <td>{{ r.count }}</td>
+          <td>${{ '%.2f'|format(r.cost) }}</td>
+          <td>${{ '%.2f'|format(r.sales) }}</td>
+          <td>${{ '%.2f'|format(r.profit) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align:center;color:#666">No sales yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>
