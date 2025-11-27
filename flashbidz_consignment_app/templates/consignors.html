@@ -2,122 +2,109 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Consignors - FlashBidz</title>
+  <title>Consignors – FlashBidz</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <style>
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-      margin:0;
-      background:#f6f7f9;
-    }
-    main {
-      padding:24px;
-      max-width:1100px;
-      margin:0 auto;
-    }
-    h1 {
-      margin:0 0 16px;
-      font-size:28px;
-      font-weight:700;
-    }
-    table {
-      width:100%;
-      border-collapse:collapse;
-      background:#fff;
-      border-radius:12px;
-      overflow:hidden;
-      box-shadow:0 6px 20px rgba(0,0,0,.06);
-    }
-    th, td {
-      padding:12px 14px;
-      border-bottom:1px solid #eee;
-      text-align:left;
-      font-size:15px;
-    }
-    th {
-      background:#fafafa;
-      font-weight:700;
-    }
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
+    main { padding:24px; max-width:1100px; margin:0 auto; }
+    h1 { margin:0 0 16px; }
+    .top-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
     .btn {
       display:inline-block;
       padding:8px 14px;
       border-radius:8px;
-      text-decoration:none;
+      border:none;
       font-size:14px;
       font-weight:600;
-      color:white;
-    }
-    .btn-edit { background:#0077cc; }
-    .btn-delete { background:#cc0000; }
-    .btn-new {
-      background:#e60000;
-      margin-bottom:16px;
-      color:white;
-      padding:10px 18px;
-      display:inline-block;
-      border-radius:8px;
-      font-weight:700;
+      cursor:pointer;
       text-decoration:none;
-      font-size:15px;
     }
-    .delete-form {
-      display:inline;
-    }
+    .btn-primary { background:#e60000; color:#fff; }
+    .btn-secondary { background:#eee; color:#333; }
+    .btn-danger { background:#b00020; color:#fff; }
+    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden;
+            box-shadow:0 4px 16px rgba(0,0,0,.05); }
+    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
+    th { background:#fafafa; font-weight:700; }
+    tr:last-child td { border-bottom:none; }
+    .num { text-align:right; white-space:nowrap; }
+    .sub { font-size:12px; color:#666; }
+    form.inline { display:inline; margin:0; }
   </style>
 </head>
-
 <body>
   {% include "_navbar.html" %}
 
   <main>
-    <h1>Consignors</h1>
-
-    <a class="btn-new" href="{{ url_for('consignor_create') }}">+ Add New Consignor</a>
+    <div class="top-row">
+      <h1>Consignors</h1>
+      <a class="btn btn-primary" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
+    </div>
 
     <table>
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Items</th>
-          <th>Commission</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th style="width:150px;">Actions</th>
+          <th>Consignor</th>
+          <th>Contact</th>
+          <th class="num">Total Items</th>
+          <th class="num">Sold</th>
+          <th class="num">Sales</th>
+          <th class="num">Cost</th>
+          <th class="num">Profit</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
+        {% if rows %}
+          {% for row in rows %}
+            {% set c = row.consignor %}
+            <tr>
+              <td>
+                <strong><a href="{{ url_for('consignors_edit', cid=c.id) }}">{{ c.name }}</a></strong><br>
+                {% if c.notes %}
+                  <span class="sub">{{ c.notes }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if c.phone %}
+                  <div class="sub">📞 {{ c.phone }}</div>
+                {% endif %}
+                {% if c.email %}
+                  <div class="sub">✉️ {{ c.email }}</div>
+                {% endif %}
+              </td>
+              <td class="num">{{ row.total_items }}</td>
+              <td class="num">{{ row.sold_items }}</td>
+              <td class="num">${{ '%.2f'|format(row.sales) }}</td>
+              <td class="num">${{ '%.2f'|format(row.cost) }}</td>
+              <td class="num">${{ '%.2f'|format(row.profit) }}</td>
+              <td>
+                <a class="btn btn-secondary"
+                   href="{{ url_for('consignors_edit', cid=c.id) }}">Edit</a>
 
-        {% for c in consignors %}
-        <tr>
-          <td>{{ c.name }}</td>
-          <td>{{ c.item_count }}</td>
-          <td>{{ c.commission_pct }}%</td>
-          <td>{{ c.email or '' }}</td>
-          <td>{{ c.phone or '' }}</td>
-
-          <td>
-            <a class="btn btn-edit" href="{{ url_for('consignors_edit', cid=c.id) }}">Edit</a>
-
-            <form class="delete-form"
-                  method="post"
-                  action="{{ url_for('consignors_delete', cid=c.id) }}"
-                  onsubmit="return confirm('Delete {{ c.name }}? This cannot be undone.');">
-              <button class="btn btn-delete" type="submit">Delete</button>
-            </form>
-          </td>
-        </tr>
+                <form class="inline"
+                      method="post"
+                      action="{{ url_for('consignors_delete', cid=c.id) }}"
+                      onsubmit="return confirm('Delete this consignor? This cannot be undone.');">
+                  <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
         {% else %}
-        <tr>
-          <td colspan="6" style="text-align:center;color:#777;padding:22px;">
-            No consignors found.
-          </td>
-        </tr>
-        {% endfor %}
-
+          <tr>
+            <td colspan="8" style="text-align:center; padding:20px; color:#666;">
+              No consignors yet.
+            </td>
+          </tr>
+        {% endif %}
       </tbody>
     </table>
-  </main>
 
+    <p class="sub" style="margin-top:12px;">
+      For deeper stats, use <a href="{{ url_for('report_consignors') }}">Consignor Performance report</a>
+      under the Reports section (with CSV export).
+    </p>
+  </main>
 </body>
 </html>
