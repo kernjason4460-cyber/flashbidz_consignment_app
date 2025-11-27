@@ -2107,121 +2107,30 @@ def consignor_statement(consignor_id):
 @app.route("/consignors")
 @require_perm("consignors:view")
 def consignors_list():
-    ...
-    # Get query parameters
-    search = (request.args.get("search") or request.args.get("q") or "").strip()
-    sort_by = request.args.get("sort_by", "created_at")
-    sort_dir = request.args.get("sort_dir", "desc")
-    missing_dl = request.args.get("missing_dl") == "1"
-
-    # Base query
-    query = Consignor.query
-
-    # Search by name / email / phone
-    if search:
-        like = f"%{search}%"
-        query = query.filter(
-            or_(
-                Consignor.name.ilike(like),
-                Consignor.email.ilike(like),
-                Consignor.phone.ilike(like),
-            )
+    # Count items for each consignor
+    rows = (
+        db.session.query(
+            Consignor,
+            func.count(Item.id).label("item_count")
         )
-
-    # Filter: only consignors missing a DL image
-    if missing_dl:
-        query = query.filter(
-            (Consignor.license_image == None) | (Consignor.license_image == "")
-        )
-
-    # Sorting map
-    sort_map = {
-        "name": Consignor.name,
-        "email": Consignor.email,
-        "phone": Consignor.phone,
-        "commission_pct": Consignor.commission_pct,
-        "advance_balance": Consignor.advance_balance,
-        "created_at": Consignor.created_at,
-    }
-
-    sort_column = sort_map.get(sort_by, Consignor.created_at)
-
-    if sort_dir == "asc":
-        query = query.order_by(sort_column.asc())
-    else:
-        query = query.order_by(sort_column.desc())
-
-    # ---------- Pagination ----------
-    per_page = 25
-
-    try:
-        page = int(request.args.get("page", 1))
-    except (TypeError, ValueError):
-        page = 1
-    if page < 1:
-        page = 1
-
-    total = query.count()
-    total_pages = max((total + per_page - 1) // per_page, 1)
-
-    if page > total_pages:
-        page = total_pages
-
-    consignors = (
-        query.offset((page - 1) * per_page)
-        .limit(per_page)
+        .outerjoin(Item, Item.consignor_id == Consignor.id)
+        .group_by(Consignor.id)
+        .order_by(Consignor.name.asc())
         .all()
     )
 
-    if total == 0:
-        start_index = 0
-        end_index = 0
-    else:
-        start_index = (page - 1) * per_page + 1
-        end_index = min(page * per_page, total)
+    consignors = []
+    for c, count in rows:
+        consignors.append({
+            "id": c.id,
+            "name": c.name,
+            "email": c.email,
+            "phone": c.phone,
+            "commission_pct": c.commission_pct,
+            "item_count": count,
+        })
 
-    # Helper for ▲ / ▼ icons
-    def sort_icon(col_name):
-        if col_name != sort_by:
-            return ""
-        return "▲" if sort_dir == "asc" else "▼"
-    # --- Consignor overview summary for the list page ---
-    total_consignors = db.session.query(db.func.count(Consignor.id)).scalar() or 0
-
-    missing_dl_count = (
-        Consignor.query
-        .filter((Consignor.license_image == None) | (Consignor.license_image == ""))
-        .count()
-    )
-
-    total_advance_balance = (
-        db.session.query(db.func.sum(Consignor.advance_balance))
-        .scalar() or 0
-    )
-
-    summary = {
-        "total_consignors": total_consignors,
-        "missing_dl": missing_dl_count,
-        "total_advance": round(float(total_advance_balance), 2),
-    }
-
-    return render_template(
-        "consignors.html",
-        consignors=consignors,
-        search=search,
-        sort_by=sort_by,
-        sort_dir=sort_dir,
-        missing_dl=missing_dl,
-        sort_icon=sort_icon,
-        page=page,
-        per_page=per_page,
-        total=total,
-        total_pages=total_pages,
-        start_index=start_index,
-        end_index=end_index,
-        summary=summary
-    )
-
+    return render_template("consignors.html", consignors=consignors)
 @app.route("/consignors/<int:consignor_id>")
 def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
@@ -2600,6 +2509,22 @@ def consignors_edit(cid):
     # GET – show populated form
     return render_template("consignor_form.html", consignor=c)
 
+@app.post("/consignors/<int:cid>/delete")
+@require_perm("consignors:edit")
+def consignors_delete(cid):
+    c = Consignor.query.get_or_404(cid)
+
+    # Optional: prevent deletion if consignor has items
+    has_items = Item.query.filter_by(consignor_id=cid).first()
+    if has_items:
+        flash("Cannot delete — consignor still has items.", "error")
+        return redirect(url_for("consignors_list"))
+
+    db.session.delete(c)
+    db.session.commit()
+
+    flash("Consignor deleted.", "info")
+    return redirect(url_for("consignors_list"))
 @app.get("/admin")
 def admin_view():
     s = get_settings()
