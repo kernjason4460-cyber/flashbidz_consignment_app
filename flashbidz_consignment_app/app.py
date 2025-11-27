@@ -1726,12 +1726,12 @@ def report_movers():
             "sale_price": (it.sale_price_cents or 0) / 100.0,
         })
 
-    # Fastest 20 and slowest 20
+       # Fastest 20 and slowest 20
     rows_sorted = sorted(rows, key=lambda r: r["days_to_sell"])
     fast = rows_sorted[:20]
     slow = list(reversed(rows_sorted))[:20]
 
-          # CSV export (all movers)
+    # CSV export (all movers)
     if request.args.get("export") == "csv":
         return _csv_response("report_movers.csv", rows)
 
