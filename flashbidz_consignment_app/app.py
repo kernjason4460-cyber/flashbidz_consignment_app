@@ -1704,19 +1704,47 @@ def report_aging():
     )
 
 
-@app.route("/reports/movers")
+@app.get("/reports/movers")
 @require_perm("reports:view")
 def report_movers():
-    """
-    Fast vs slow movers – based on Item.created_at and Item.sale_date.
-    Only sold items.
-    """
-    items = Item.query.filter(Item.status == "sold", Item.sale_date.isnot(None)).all()
+    """Fast vs slow movers based on days to sell."""
 
-       rows = []
+    # Optional date filters based on sale_date
+    start = (request.args.get("start") or "").strip()
+    end   = (request.args.get("end") or "").strip()
+
+    q = Item.query.filter(Item.status == "sold")
+
+    start_date = None
+    end_date = None
+
+    if start:
+        try:
+            start_date = datetime.strptime(start, "%Y-%m-%d").date()
+            q = q.filter(Item.sale_date >= start_date)
+        except Exception:
+            start_date = None
+
+    if end:
+        try:
+            end_date = datetime.strptime(end, "%Y-%m-%d").date()
+            q = q.filter(Item.sale_date <= end_date)
+        except Exception:
+            end_date = None
+
+    items = q.order_by(Item.sale_date.desc()).all()
+
+    summary = {
+        "start": start_date,
+        "end": end_date,
+    }
+
+    # Build row list
+    rows = []
     for it in items:
         if not it.created_at or not it.sale_date:
             continue
+
         days_to_sell = (it.sale_date - it.created_at.date()).days
         rows.append({
             "item": it,
