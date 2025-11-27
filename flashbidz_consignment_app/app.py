@@ -1570,85 +1570,98 @@ def report_consignors():
 @app.get("/reports/channels")
 @require_perm("reports:view")
 def report_channels():
-    """
-    Show performance by sale channel using the Sale table.
-    Safe even if some money fields don't exist on the Sale model.
-    """
+    """Channel performance report (auction / store / eBay, etc)."""
 
-    # Figure out which columns actually exist on the Sale model
-    has_price_cents  = hasattr(Sale, "sale_price_cents")
-    has_ship_cents   = hasattr(Sale, "shipping_fee_cents")
-    has_fee_cents    = hasattr(Sale, "marketplace_fee_cents")
-    has_tax_cents    = hasattr(Sale, "tax_cents")
+    # Optional date filters using Sale.created_at
+    start = (request.args.get("start") or "").strip()
+    end   = (request.args.get("end") or "").strip()
 
-    # Base columns (always exist)
-    base_channel = Sale.channel.label("channel")
-    base_count   = func.count(Sale.id).label("count")
+    sale_q = Sale.query
+    start_date = None
+    end_date = None
 
-    # Optional money columns – fall back to literal(0) if missing
-    sales_col = (
-        func.coalesce(func.sum(getattr(Sale, "sale_price_cents")), 0).label("sales_cents")
-        if has_price_cents else
-        literal(0).label("sales_cents")
-    )
+    if start:
+        try:
+            start_date = datetime.strptime(start, "%Y-%m-%d").date()
+            sale_q = sale_q.filter(Sale.created_at >= start_date)
+        except Exception:
+            start_date = None
 
-    shipping_col = (
-        func.coalesce(func.sum(getattr(Sale, "shipping_fee_cents")), 0).label("shipping_cents")
-        if has_ship_cents else
-        literal(0).label("shipping_cents")
-    )
+    if end:
+        try:
+            end_date = datetime.strptime(end, "%Y-%m-%d").date()
+            # created_at is a datetime; compare to end_of_day
+            end_dt = datetime.combine(end_date, datetime.max.time())
+            sale_q = sale_q.filter(Sale.created_at <= end_dt)
+        except Exception:
+            end_date = None
 
-    fees_col = (
-        func.coalesce(func.sum(getattr(Sale, "marketplace_fee_cents")), 0).label("fees_cents")
-        if has_fee_cents else
-        literal(0).label("fees_cents")
-    )
-
-    tax_col = (
-        func.coalesce(func.sum(getattr(Sale, "tax_cents")), 0).label("tax_cents")
-        if has_tax_cents else
-        literal(0).label("tax_cents")
-    )
-
-    # Build the query using the columns we just defined
+    # Aggregate by channel
     rows = (
-        db.session.query(
-            base_channel,
-            base_count,
-            sales_col,
-            shipping_col,
-            fees_col,
-            tax_col,
+        sale_q.with_entities(
+            Sale.channel.label("channel"),
+            func.count(Sale.id).label("count"),
+            func.coalesce(func.sum(Sale.sale_price_cents), 0).label("sales_cents"),
+            func.coalesce(func.sum(Sale.shipping_fee_cents), 0).label("shipping_cents"),
+            func.coalesce(func.sum(Sale.marketplace_fee_cents), 0).label("fees_cents"),
+            func.coalesce(func.sum(Sale.tax_cents), 0).label("tax_cents"),
         )
-        .group_by(base_channel)
-        .order_by(base_count.desc())
+        .group_by(Sale.channel)
+        .order_by(func.coalesce(func.sum(Sale.sale_price_cents), 0).desc())
         .all()
     )
 
     channel_rows = []
+    total_orders = 0
+    total_sales = 0.0
+    total_shipping = 0.0
+    total_fees = 0.0
+    total_tax = 0.0
+    total_net = 0.0
+
     for r in rows:
-        # All money values are treated as cents; if the real columns
-        # weren't present, they're just 0 from literal(0).
+        # convert cents → dollars
         sales    = (r.sales_cents or 0) / 100.0
         shipping = (r.shipping_cents or 0) / 100.0
         fees     = (r.fees_cents or 0) / 100.0
         tax      = (r.tax_cents or 0) / 100.0
         net      = sales + shipping - fees - tax
 
+        count = r.count or 0
+        total_orders   += count
+        total_sales    += sales
+        total_shipping += shipping
+        total_fees     += fees
+        total_tax      += tax
+        total_net      += net
+
         channel_rows.append({
-            "channel": r.channel or "(unknown)",
-            "count":   r.count,
-            "sales":   sales,
-            "shipping": shipping,
-            "fees":    fees,
-            "tax":     tax,
-            "net":     net,
+            "channel":   r.channel or "(unknown)",
+            "count":     count,
+            "sales":     sales,
+            "shipping":  shipping,
+            "fees":      fees,
+            "tax":       tax,
+            "net":       net,
         })
+
+    # Summary dict for the template + header
+    summary = {
+        "start":          start_date,
+        "end":            end_date,
+        "total_orders":   total_orders,
+        "total_sales":    total_sales,
+        "total_shipping": total_shipping,
+        "total_fees":     total_fees,
+        "total_tax":      total_tax,
+        "total_net":      total_net,
+    }
 
     # CSV export
     if request.args.get("export") == "csv":
         return _csv_response("report_channels.csv", channel_rows)
 
+    # HTML view
     return render_template(
         "report_channels.html",
         rows=channel_rows,
