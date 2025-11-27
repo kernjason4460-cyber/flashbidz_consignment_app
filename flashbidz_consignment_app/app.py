@@ -1570,9 +1570,12 @@ def report_consignors():
 @app.get("/reports/channels")
 @require_perm("reports:view")
 def report_channels():
-    """Channel performance report (auction / store / eBay, etc)."""
-
-    # Optional date filters using Sale.created_at
+    """
+    Channel performance report (auction / store / eBay / etc.).
+    Uses the Sale table and aggregates in Python so it works even if
+    some columns are missing or named slightly differently.
+    """
+    # Optional date filters
     start = (request.args.get("start") or "").strip()
     end   = (request.args.get("end") or "").strip()
 
@@ -1583,78 +1586,72 @@ def report_channels():
     if start:
         try:
             start_date = datetime.strptime(start, "%Y-%m-%d").date()
-            sale_q = sale_q.filter(Sale.created_at >= start_date)
+            # assume Sale has created_at; if not, you can swap to sale_date
+            sale_q = sale_q.filter(Sale.created_at >= datetime.combine(start_date, datetime.min.time()))
         except Exception:
             start_date = None
 
     if end:
         try:
             end_date = datetime.strptime(end, "%Y-%m-%d").date()
-            # created_at is a datetime; compare to end_of_day
-            end_dt = datetime.combine(end_date, datetime.max.time())
-            sale_q = sale_q.filter(Sale.created_at <= end_dt)
+            sale_q = sale_q.filter(Sale.created_at <= datetime.combine(end_date, datetime.max.time()))
         except Exception:
             end_date = None
 
+    sales = sale_q.all()
+
     # Aggregate by channel
-    rows = (
-        sale_q.with_entities(
-            Sale.channel.label("channel"),
-            func.count(Sale.id).label("count"),
-            func.coalesce(func.sum(Sale.sale_price_cents), 0).label("sales_cents"),
-            func.coalesce(func.sum(Sale.shipping_fee_cents), 0).label("shipping_cents"),
-            func.coalesce(func.sum(Sale.marketplace_fee_cents), 0).label("fees_cents"),
-            func.coalesce(func.sum(Sale.tax_cents), 0).label("tax_cents"),
-        )
-        .group_by(Sale.channel)
-        .order_by(func.coalesce(func.sum(Sale.sale_price_cents), 0).desc())
-        .all()
-    )
+    channels = {}  # channel -> dict
+    for s in sales:
+        ch = (getattr(s, "channel", None) or "unknown").lower()
 
+        if ch not in channels:
+            channels[ch] = {
+                "channel": ch,
+                "count": 0,
+                "sales_cents": 0,
+                "shipping_cents": 0,
+                "fees_cents": 0,
+                "tax_cents": 0,
+            }
+
+        row = channels[ch]
+        qty = getattr(s, "qty", 1) or 1
+
+        row["count"]          += qty
+        row["sales_cents"]    += (getattr(s, "sale_price_cents", 0) or 0)
+        row["shipping_cents"] += (getattr(s, "shipping_fee_cents", 0) or 0)
+        row["fees_cents"]     += (getattr(s, "marketplace_fee_cents", 0) or 0)
+        row["tax_cents"]      += (getattr(s, "tax_cents", 0) or 0)
+
+    # Convert to list with dollar amounts
     channel_rows = []
-    total_orders = 0
-    total_sales = 0.0
-    total_shipping = 0.0
-    total_fees = 0.0
-    total_tax = 0.0
-    total_net = 0.0
-
-    for r in rows:
-        # convert cents → dollars
-        sales    = (r.sales_cents or 0) / 100.0
-        shipping = (r.shipping_cents or 0) / 100.0
-        fees     = (r.fees_cents or 0) / 100.0
-        tax      = (r.tax_cents or 0) / 100.0
-        net      = sales + shipping - fees - tax
-
-        count = r.count or 0
-        total_orders   += count
-        total_sales    += sales
-        total_shipping += shipping
-        total_fees     += fees
-        total_tax      += tax
-        total_net      += net
+    for ch_key, data in channels.items():
+        sales_d    = data["sales_cents"] / 100.0
+        shipping_d = data["shipping_cents"] / 100.0
+        fees_d     = data["fees_cents"] / 100.0
+        tax_d      = data["tax_cents"] / 100.0
+        net_d      = sales_d + shipping_d - fees_d - tax_d
 
         channel_rows.append({
-            "channel":   r.channel or "(unknown)",
-            "count":     count,
-            "sales":     sales,
-            "shipping":  shipping,
-            "fees":      fees,
-            "tax":       tax,
-            "net":       net,
+            "channel": ch_key,
+            "count": data["count"],
+            "sales": sales_d,
+            "shipping": shipping_d,
+            "fees": fees_d,
+            "tax": tax_d,
+            "net": net_d,
         })
 
-    # Summary dict for the template + header
+    # Overall summary
     summary = {
-        "start":          start_date,
-        "end":            end_date,
-        "total_orders":   total_orders,
-        "total_sales":    total_sales,
-        "total_shipping": total_shipping,
-        "total_fees":     total_fees,
-        "total_tax":      total_tax,
-        "total_net":      total_net,
+        "start": start_date,
+        "end": end_date,
+        "total_sales": sum(r["sales"] for r in channel_rows),
+        "total_shipping": sum(r["shipping"] for r in channel_rows),
+        "total_fees": sum(r["fees"] for r in channel_rows),
+        "total_tax": sum(r["tax"] for r in channel_rows),
+        "total_net": sum(r["net"] for r in channel_rows),
     }
 
     # CSV export
