@@ -2105,11 +2105,13 @@ def consignor_statement(consignor_id):
 # =========================
 
 @app.route("/consignors")
-@require_perm("consignors_view")  # keep whatever you already had here
+@require_perm("consignors_view")  # keep your existing permission decorator
 def consignors_list():
     """
-    Consignor list + basic performance stats.
+    Consignor list + basic performance stats + search.
     """
+    q = (request.args.get("q") or "").strip()
+
     # Subquery: total items per consignor
     items_sub = (
         db.session.query(
@@ -2133,7 +2135,7 @@ def consignors_list():
         .subquery()
     )
 
-    # Join consignors with the aggregates
+    # Base query
     query = (
         db.session.query(
             Consignor,
@@ -2144,8 +2146,20 @@ def consignors_list():
         )
         .outerjoin(items_sub, items_sub.c.consignor_id == Consignor.id)
         .outerjoin(sold_sub, sold_sub.c.consignor_id == Consignor.id)
-        .order_by(Consignor.name)
     )
+
+    # Optional search filter
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                Consignor.name.ilike(like),
+                Consignor.email.ilike(like),
+                Consignor.phone.ilike(like),
+            )
+        )
+
+    query = query.order_by(Consignor.name)
 
     rows = []
     for c, total_items, sold_items, sales_cents, cost_cents in query.all():
@@ -2161,7 +2175,7 @@ def consignors_list():
             "profit": profit,
         })
 
-    return render_template("consignors.html", rows=rows)
+    return render_template("consignors.html", rows=rows, q=q)
 @app.route("/consignors/<int:consignor_id>")
 def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
