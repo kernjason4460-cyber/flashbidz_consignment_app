@@ -3343,13 +3343,42 @@ def checkout_discount():
     """Apply a dollar discount to the whole cart."""
     amount = request.form.get("discount") or ""
     cents = _dollars_to_cents(amount) or 0
+    def _dollars_to_cents(amount: str) -> int:
     session["checkout_discount_cents"] = max(cents, 0)
     session.modified = True
     flash(f"Discount set to ${cents / 100.0:.2f}.", "info")
     session["checkout_beep"] = "ok"
     return redirect(url_for("checkout_view"))
 
+import csv
+import io
+from flask import Response
 
+def _csv_response(filename: str, rows: list[dict], fieldnames=None):
+    """
+    Turn a list of dicts into a downloadable CSV file.
+    Easily reusable across all reports.
+    """
+    output = io.StringIO()
+
+    if not rows:
+        fieldnames = fieldnames or []
+    else:
+        if fieldnames is None:
+            # Auto-detect column names from the first row
+            fieldnames = list(rows[0].keys())
+
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow(row)
+
+    csv_data = output.getvalue()
+    output.close()
+
+    resp = Response(csv_data, mimetype="text/csv")
+    resp.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    return resp
 @require_perm("items:sell")
 @app.post("/checkout/clear")
 def checkout_clear():
