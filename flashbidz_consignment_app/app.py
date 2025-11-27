@@ -2105,32 +2105,63 @@ def consignor_statement(consignor_id):
 # =========================
 
 @app.route("/consignors")
-@require_perm("consignors:view")
+@require_perm("consignors_view")  # keep whatever you already had here
 def consignors_list():
-    # Count items for each consignor
-    rows = (
+    """
+    Consignor list + basic performance stats.
+    """
+    # Subquery: total items per consignor
+    items_sub = (
         db.session.query(
-            Consignor,
-            func.count(Item.id).label("item_count")
+            Item.consignor_id.label("consignor_id"),
+            func.count(Item.id).label("total_items"),
         )
-        .outerjoin(Item, Item.consignor_id == Consignor.id)
-        .group_by(Consignor.id)
-        .order_by(Consignor.name.asc())
-        .all()
+        .group_by(Item.consignor_id)
+        .subquery()
     )
 
-    consignors = []
-    for c, count in rows:
-        consignors.append({
-            "id": c.id,
-            "name": c.name,
-            "email": c.email,
-            "phone": c.phone,
-            "commission_pct": c.commission_pct,
-            "item_count": count,
+    # Subquery: SOLD items per consignor, plus cost & sales in cents
+    sold_sub = (
+        db.session.query(
+            Item.consignor_id.label("consignor_id"),
+            func.count(Item.id).label("sold_items"),
+            func.coalesce(func.sum(Item.sale_price_cents), 0).label("sales_cents"),
+            func.coalesce(func.sum(Item.cost_cents), 0).label("cost_cents"),
+        )
+        .filter(Item.status == "sold")
+        .group_by(Item.consignor_id)
+        .subquery()
+    )
+
+    # Join consignors with the aggregates
+    query = (
+        db.session.query(
+            Consignor,
+            func.coalesce(items_sub.c.total_items, 0).label("total_items"),
+            func.coalesce(sold_sub.c.sold_items, 0).label("sold_items"),
+            func.coalesce(sold_sub.c.sales_cents, 0).label("sales_cents"),
+            func.coalesce(sold_sub.c.cost_cents, 0).label("cost_cents"),
+        )
+        .outerjoin(items_sub, items_sub.c.consignor_id == Consignor.id)
+        .outerjoin(sold_sub, sold_sub.c.consignor_id == Consignor.id)
+        .order_by(Consignor.name)
+    )
+
+    rows = []
+    for c, total_items, sold_items, sales_cents, cost_cents in query.all():
+        sales = (sales_cents or 0) / 100.0
+        cost = (cost_cents or 0) / 100.0
+        profit = sales - cost
+        rows.append({
+            "consignor": c,
+            "total_items": total_items or 0,
+            "sold_items": sold_items or 0,
+            "sales": sales,
+            "cost": cost,
+            "profit": profit,
         })
 
-    return render_template("consignors.html", consignors=consignors)
+    return render_template("consignors.html", rows=rows)
 @app.route("/consignors/<int:consignor_id>")
 def consignor_detail(consignor_id):
     consignor = Consignor.query.get_or_404(consignor_id)
