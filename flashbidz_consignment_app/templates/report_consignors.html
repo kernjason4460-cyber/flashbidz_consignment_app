@@ -18,7 +18,15 @@
   {% include "_navbar.html" %}
   <main>
     <h1>Consignor Performance</h1>
-
+<p>
+  <a class="btn"
+     href="{{ url_for('report_consignors',
+                      start=summary.start,
+                      end=summary.end,
+                      export='csv') }}">
+    Export CSV
+  </a>
+</p>
     {% if start or end %}
       <p>
         Date range:
