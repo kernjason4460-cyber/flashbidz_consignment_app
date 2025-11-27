@@ -1480,28 +1480,6 @@ from sqlalchemy import func  # you already import this, just be sure it's there
 
 @app.get("/reports/channels")
 @require_perm("reports:view")
-def report_channels():
-    """Totals by sales channel (auction, store, eBay, etc.)."""
-    rows = (
-        db.session.query(
-            Sale.channel,
-            db.func.count(Sale.id).label("sale_count"),
-            db.func.coalesce(db.func.sum(Sale.sale_price_cents), 0).label("sale_cents"),
-        )
-        .group_by(Sale.channel)
-        .order_by(db.desc("sale_cents"))
-        .all()
-    )
-
-    result = []
-    for r in rows:
-        result.append({
-            "channel": r.channel or "Unknown",
-            "sale_count": r.sale_count,
-            "sales_dollars": (r.sale_cents or 0) / 100.0,
-        })
-
-    return render_template("report_channels.html", rows=result)
 
 from datetime import date  # you already import datetime; this can go up top once
 
@@ -1604,20 +1582,6 @@ def report_consignors():
         })
 
     return render_template("report_consignors.html", consignors=consignor_rows)
-
-@app.get("/reports/channels")
-@require_perm("reports:view")
-def report_channels():
-    by_channel = (
-        db.session.query(
-            Item.channel,
-            db.func.count(Item.id),
-            db.func.coalesce(db.func.sum(Item.sale_price_cents) / 100.0, 0)
-        )
-        .group_by(Item.channel)
-        .all()
-    )
-    return render_template("report_channels.html", rows=by_channel)
 
 @app.get("/reports/aging")
 @require_perm("reports:view")
