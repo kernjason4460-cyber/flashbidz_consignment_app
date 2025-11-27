@@ -1485,60 +1485,8 @@ from datetime import date  # you already import datetime; this can go up top onc
 
 @app.get("/reports/aging")
 @require_perm("reports:view")
-def report_aging():
-    """Age of each item in days since created."""
-    items = (
-        Item.query
-        .order_by(Item.created_at.asc())
-        .all()
-    )
 
-    today = date.today()
-    rows = []
-    for it in items:
-        created = it.created_at.date() if it.created_at else today
-        days_on_shelf = (today - created).days
-        rows.append({
-            "item": it,
-            "sku": it.sku,
-            "status": it.status,
-            "created": created,
-            "days_on_shelf": days_on_shelf,
-        })
 
-    # Template can group/sort however you like
-    return render_template("report_aging.html", rows=rows, today=today)
-
-@app.get("/reports/movers")
-@require_perm("reports:view")
-def report_movers():
-    """Fast / slow movers based on how many times an item sold."""
-    rows = (
-        db.session.query(
-            Item.id,
-            Item.title,
-            Item.sku,
-            db.func.count(Sale.id).label("sale_count"),
-            db.func.coalesce(db.func.sum(Sale.sale_price_cents), 0).label("sale_cents"),
-        )
-        .outerjoin(Sale, Sale.item_id == Item.id)
-        .group_by(Item.id, Item.title, Item.sku)
-        .order_by(db.desc("sale_count"), db.desc("sale_cents"))
-        .all()
-    )
-
-    result = []
-    for r in rows:
-        result.append({
-            "id": r.id,
-            "title": r.title,
-            "sku": r.sku,
-            "sale_count": r.sale_count,
-            "sales_dollars": (r.sale_cents or 0) / 100.0,
-        })
-
-    return render_template("report_movers.html", rows=result)
-    
 # ========= DETAILED REPORTS =========
 
 @app.route("/reports/consignors")
@@ -1582,36 +1530,6 @@ def report_consignors():
         })
 
     return render_template("report_consignors.html", consignors=consignor_rows)
-
-@app.get("/reports/aging")
-@require_perm("reports:view")
-def report_aging():
-    rows = (
-        db.session.query(
-            Item,
-            (db.func.DATE("now") - db.func.DATE(Item.created_at)).label("days")
-        )
-        .all()
-    )
-    return render_template("report_aging.html", rows=rows)
-
-@app.get("/reports/movers")
-@require_perm("reports:view")
-def report_movers():
-    movers = (
-        db.session.query(
-            Item.title,
-            Item.sku,
-            Item.sale_price_cents,
-            Item.status,
-            db.func.count(Sale.id).label("qty")
-        )
-        .outerjoin(Sale, Sale.item_id == Item.id)
-        .group_by(Item.id)
-        .order_by(db.desc("qty"))
-        .all()
-    )
-    return render_template("report_movers.html", rows=movers)
     
 @app.route("/reports/channels")
 @require_perm("reports:view")
