@@ -1478,37 +1478,6 @@ def reports():
     return render_template("reports.html", summary=summary, ownership=ownership)
 from sqlalchemy import func  # you already import this, just be sure it's there
 
-@app.get("/reports/consignors")
-@require_perm("reports:view")
-def report_consignors():
-    """Sales and items grouped by consignor."""
-    # Join Consignor -> Item -> Sale (outer join so consignors with no sales still show)
-    rows = (
-        db.session.query(
-            Consignor.id,
-            Consignor.name,
-            db.func.count(Item.id).label("item_count"),
-            db.func.coalesce(db.func.sum(Sale.sale_price_cents), 0).label("sale_cents"),
-        )
-        .outerjoin(Item, Item.consignor_id == Consignor.id)
-        .outerjoin(Sale, Sale.item_id == Item.id)
-        .group_by(Consignor.id, Consignor.name)
-        .order_by(db.desc("sale_cents"))
-        .all()
-    )
-
-    # Convert cents → dollars in Python for easier formatting in the template
-    result = []
-    for r in rows:
-        result.append({
-            "id": r.id,
-            "name": r.name,
-            "item_count": r.item_count,
-            "sales_dollars": (r.sale_cents or 0) / 100.0,
-        })
-
-    return render_template("report_consignors.html", rows=result)
-
 @app.get("/reports/channels")
 @require_perm("reports:view")
 def report_channels():
