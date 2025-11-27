@@ -5,49 +5,85 @@
   <title>Reports - FlashBidz</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; margin:0; background:#f6f7f9; }
-    main { padding:24px; max-width:1100px; margin:0 auto; }
-    h1 { margin:0 0 16px; }
-
-    .card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 6px 20px rgba(0,0,0,.06); margin-bottom:16px; }
-
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      margin: 0;
+      background: #f6f7f9;
+    }
+    main {
+      padding: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0 0 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.06);
+      margin-bottom: 16px;
+    }
     .grid {
-      display:grid;
+      display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
-      gap:12px;
-      margin-bottom:16px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
-
-    .stat { background:#fff; border-radius:12px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.06); }
-    .stat .num { font-size:24px; font-weight:800; }
-
-    table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.06); }
-    th, td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
-    th { background:#fafafa; font-weight:700; }
-
-    .filters { display:flex; gap:10px; align-items:end; margin:12px 0 16px; }
-    input[type="date"] { padding:8px; border-radius:8px; border:1px solid #ddd; }
-
+    .stat {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.06);
+    }
+    .stat .num {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0,0,0,.06);
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+    th {
+      background: #fafafa;
+      font-weight: 700;
+    }
+    .filters {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      margin: 12px 0 12px;
+      flex-wrap: wrap;
+    }
+    input[type="date"] {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
     .btn {
-      padding:10px 14px;
-      background:#e60000;
-      color:#fff;
-      border:none;
-      border-radius:8px;
-      font-weight:700;
-      text-decoration:none;
-      cursor:pointer;
+      padding: 10px 14px;
+      background: #e60000;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-block;
     }
-
-    ul.report-links {
-      background:#fff;
-      padding:16px;
-      border-radius:12px;
-      box-shadow:0 6px 20px rgba(0,0,0,.06);
-      list-style:none;
+    .btn:visited {
+      color: #fff;
     }
-    ul.report-links li { margin:8px 0; }
-    ul.report-links a { font-weight:600; color:#e60000; text-decoration:none; }
   </style>
 </head>
 <body>
@@ -56,8 +92,8 @@
   <main>
     <h1>Reports</h1>
 
-    <!-- FILTERS -->
-    <form method="get" action="/reports" class="filters">
+    <!-- Date filters -->
+    <form method="get" action="{{ url_for('reports') }}" class="filters">
       <div>
         <label>Start</label><br>
         <input type="date" name="start" value="{{ summary.start }}">
@@ -67,12 +103,22 @@
         <input type="date" name="end" value="{{ summary.end }}">
       </div>
       <div>
-        <br>
         <button class="btn" type="submit">Apply</button>
       </div>
     </form>
 
-    <!-- SUMMARY GRID -->
+    <!-- Export CSV button -->
+    <p>
+      <a class="btn"
+         href="{{ url_for('reports',
+                          start=summary.start,
+                          end=summary.end,
+                          export='csv') }}">
+        Export CSV
+      </a>
+    </p>
+
+    <!-- Topline stats -->
     <div class="grid">
       <div class="stat">
         <div>Total Items</div>
@@ -100,7 +146,7 @@
       </div>
     </div>
 
-    <!-- BY OWNERSHIP TABLE -->
+    <!-- Ownership breakdown -->
     <div class="card">
       <h3>By Ownership</h3>
       <table>
@@ -114,32 +160,61 @@
           </tr>
         </thead>
         <tbody>
-          {% for row in ownership %}
-          <tr>
-            <td>{{ row.ownership|capitalize }}</td>
-            <td>{{ row.count }}</td>
-            <td>${{ '%.2f'|format(row.cost) }}</td>
-            <td>${{ '%.2f'|format(row.sales) }}</td>
-            <td>${{ '%.2f'|format(row.profit) }}</td>
-          </tr>
+          {% if ownership %}
+            {% for row in ownership %}
+              <tr>
+                <td>{{ row.ownership|capitalize }}</td>
+                <td>{{ row.count }}</td>
+                <td>${{ '%.2f'|format(row.cost) }}</td>
+                <td>${{ '%.2f'|format(row.sales) }}</td>
+                <td>${{ '%.2f'|format(row.profit) }}</td>
+              </tr>
+            {% endfor %}
           {% else %}
-          <tr>
-            <td colspan="5" style="text-align:center;color:#666">No data yet.</td>
-          </tr>
-          {% endfor %}
+            <tr>
+              <td colspan="5" style="text-align:center;color:#666">
+                No data yet.
+              </td>
+            </tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
 
-    <!-- DETAILED REPORT LINKS -->
-    <h2>Detailed Reports</h2>
-    <ul class="report-links">
-      <li><a href="{{ url_for('report_consignors') }}">Consignor Performance</a></li>
-      <li><a href="{{ url_for('report_channels') }}">Channel Performance (Auction / Store / eBay)</a></li>
-      <li><a href="{{ url_for('report_aging') }}">Inventory Aging</a></li>
-      <li><a href="{{ url_for('report_movers') }}">Fast & Slow Movers</a></li>
-    </ul>
-
+    <!-- Links to detailed reports -->
+    <div class="card">
+      <h2>Detailed Reports</h2>
+      <ul>
+        <li>
+          <a href="{{ url_for('report_consignors',
+                              start=summary.start,
+                              end=summary.end) }}">
+            Consignor performance
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('report_channels',
+                              start=summary.start,
+                              end=summary.end) }}">
+            Channel performance (auction / store / eBay)
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('report_aging',
+                              start=summary.start,
+                              end=summary.end) }}">
+            Inventory aging
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('report_movers',
+                              start=summary.start,
+                              end=summary.end) }}">
+            Fast &amp; slow movers
+          </a>
+        </li>
+      </ul>
+    </div>
   </main>
 </body>
 </html>
