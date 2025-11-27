@@ -3343,31 +3343,39 @@ def checkout_discount():
     """Apply a dollar discount to the whole cart."""
     amount = request.form.get("discount") or ""
     cents = _dollars_to_cents(amount) or 0
-    def _dollars_to_cents(amount: str) -> int:
     session["checkout_discount_cents"] = max(cents, 0)
     session.modified = True
     flash(f"Discount set to ${cents / 100.0:.2f}.", "info")
     session["checkout_beep"] = "ok"
     return redirect(url_for("checkout_view"))
 
-import csv
-import io
-from flask import Response
 
-def _csv_response(filename: str, rows: list[dict], fieldnames=None):
-    """
-    Turn a list of dicts into a downloadable CSV file.
-    Easily reusable across all reports.
-    """
-    output = io.StringIO()
+@require_perm("items:sell")
+@app.post("/checkout/clear")
+def checkout_clear():
+    """Clear cart + discount."""
+    session["checkout_cart"] = []
+    session["checkout_discount_cents"] = 0
+    session.modified = True
+    flash("Checkout cleared.", "info")
+    session["checkout_beep"] = "ok"
+    return redirect(url_for("checkout_view"))
 
+
+def _csv_response(filename: str, rows: list[dict]):
+    """Turn a list of dicts into a CSV download."""
+    import io
+    import csv
+    from flask import Response
+
+    # Make sure we always have at least the header row
     if not rows:
-        fieldnames = fieldnames or []
-    else:
-        if fieldnames is None:
-            # Auto-detect column names from the first row
-            fieldnames = list(rows[0].keys())
+        rows = [{}]
 
+    # Use keys of first row as fieldnames
+    fieldnames = list(rows[0].keys())
+
+    output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=fieldnames)
     writer.writeheader()
     for row in rows:
@@ -3376,9 +3384,10 @@ def _csv_response(filename: str, rows: list[dict], fieldnames=None):
     csv_data = output.getvalue()
     output.close()
 
-    resp = Response(csv_data, mimetype="text/csv")
-    resp.headers["Content-Disposition"] = f"attachment; filename={filename}"
-    return resp
+    response = Response(csv_data, mimetype="text/csv")
+    response.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    return response
+    
 @require_perm("items:sell")
 @app.post("/checkout/clear")
 def checkout_clear():
