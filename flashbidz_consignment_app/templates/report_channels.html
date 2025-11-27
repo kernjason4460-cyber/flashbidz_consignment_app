@@ -17,7 +17,15 @@
   {% include "_navbar.html" %}
   <main>
     <h1>Channel Performance</h1>
-
+<p>
+  <a class="btn"
+     href="{{ url_for('report_channels',
+                      start=summary.start,
+                      end=summary.end,
+                      export='csv') }}">
+    Export CSV
+  </a>
+</p>
     <table>
       <thead>
         <tr>
