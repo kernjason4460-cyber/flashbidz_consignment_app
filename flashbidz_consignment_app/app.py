@@ -3388,16 +3388,6 @@ def _csv_response(filename: str, rows: list[dict]):
     response.headers["Content-Disposition"] = f"attachment; filename={filename}"
     return response
     
-@require_perm("items:sell")
-@app.post("/checkout/clear")
-def checkout_clear():
-    """Clear cart + discount."""
-    session["checkout_cart"] = []
-    session["checkout_discount_cents"] = 0
-    session.modified = True
-    flash("Checkout cleared.", "info")
-    session["checkout_beep"] = "ok"
-    return redirect(url_for("checkout_view"))
 # ---------- SALES ----------
 @app.route("/sales/new", methods=["GET","POST"])
 @require_perm("sales:edit")
