@@ -1480,88 +1480,125 @@ from sqlalchemy import func  # you already import this, just be sure it's there
 
 # ========= DETAILED REPORTS =========
 
-@app.route("/reports/consignors")
+from sqlalchemy import func
+
+# ---------- CONSIGNOR PERFORMANCE REPORT ----------
+@app.get("/reports/consignors")
 @require_perm("reports:view")
 def report_consignors():
     """
-    Consignor performance: lifetime sales by consignor.
-    Uses Sale + Item + Consignor.
+    Show per-consignor performance:
+    - number of sold items
+    - total cost
+    - total sales
+    - profit
     """
+    # Optional date filters (by Item.sale_date)
+    start_str = (request.args.get("start") or "").strip()
+    end_str   = (request.args.get("end") or "").strip()
+
+    sold_q = Item.query.filter(Item.status == "sold")
+
+    start_date = end_date = None
+
+    if start_str:
+        try:
+            start_date = datetime.strptime(start_str, "%Y-%m-%d").date()
+            sold_q = sold_q.filter(Item.sale_date >= start_date)
+        except ValueError:
+            start_date = None
+
+    if end_str:
+        try:
+            end_date = datetime.strptime(end_str, "%Y-%m-%d").date()
+            sold_q = sold_q.filter(Item.sale_date <= end_date)
+        except ValueError:
+            end_date = None
+
+    # Subquery of sold items with consignor_id + cents
+    sold_sub = sold_q.with_entities(
+        Item.consignor_id.label("consignor_id"),
+        Item.cost_cents.label("cost_cents"),
+        Item.sale_price_cents.label("sale_cents"),
+    ).subquery()
+
     rows = (
         db.session.query(
-            Consignor.id,
-            Consignor.name,
-            func.coalesce(func.sum(Sale.qty), 0).label("units"),
-            func.coalesce(func.count(Sale.id), 0).label("num_sales"),
-            func.coalesce(func.sum(Sale.sale_price_cents), 0).label("gross_cents"),
-            func.coalesce(func.sum((Item.cost_cents or 0) * Sale.qty), 0).label("cost_cents"),
+            Consignor.id.label("id"),
+            Consignor.name.label("name"),
+            func.count(sold_sub.c.consignor_id).label("count"),
+            func.coalesce(func.sum(sold_sub.c.cost_cents), 0).label("cost_cents"),
+            func.coalesce(func.sum(sold_sub.c.sale_cents), 0).label("sale_cents"),
         )
-        .join(Item, Item.id == Sale.item_id)
-        .outerjoin(Consignor, Consignor.id == Item.consignor_id)
+        .outerjoin(sold_sub, sold_sub.c.consignor_id == Consignor.id)
         .group_by(Consignor.id, Consignor.name)
-        .order_by(func.sum(Sale.sale_price_cents).desc())
+        .order_by(func.coalesce(func.sum(sold_sub.c.sale_cents), 0).desc())
         .all()
     )
 
     consignor_rows = []
-    for cid, name, units, num_sales, gross_cents, cost_cents in rows:
-        gross = (gross_cents or 0) / 100.0
-        cost = (cost_cents or 0) / 100.0
-        profit = gross - cost
-        avg_sale = (gross / num_sales) if num_sales else 0.0
+    for r in rows:
+        cost = (r.cost_cents or 0) / 100.0
+        sales = (r.sale_cents or 0) / 100.0
         consignor_rows.append({
-            "id": cid,
-            "name": name or "(No consignor)",
-            "units": units or 0,
-            "num_sales": num_sales or 0,
-            "gross": gross,
+            "id": r.id,
+            "name": r.name,
+            "count": r.count,
             "cost": cost,
-            "profit": profit,
-            "avg_sale": avg_sale,
+            "sales": sales,
+            "profit": sales - cost,
         })
 
-    return render_template("report_consignors.html", consignors=consignor_rows)
-    
-@app.route("/reports/channels")
+    return render_template(
+        "report_consignors.html",
+        rows=consignor_rows,
+        start=start_date,
+        end=end_date,
+    )
+
+
+# ---------- CHANNEL PERFORMANCE REPORT ----------
+@app.get("/reports/channels")
 @require_perm("reports:view")
 def report_channels():
     """
-    Channel performance: auction vs store vs eBay, etc.
-    Based purely on Sale.channel.
+    Show performance by sale channel using the Sale table.
+    Channels might be: auction, store, ebay, etc.
     """
+    # Simple totals over all time (keeps things safe)
     rows = (
         db.session.query(
-            Sale.channel,
-            func.coalesce(func.sum(Sale.qty), 0).label("units"),
-            func.coalesce(func.sum(Sale.sale_price_cents), 0).label("gross_cents"),
+            Sale.channel.label("channel"),
+            func.count(Sale.id).label("count"),
+            func.coalesce(func.sum(Sale.sale_price_cents), 0).label("sales_cents"),
             func.coalesce(func.sum(Sale.shipping_fee_cents), 0).label("shipping_cents"),
             func.coalesce(func.sum(Sale.marketplace_fee_cents), 0).label("fees_cents"),
             func.coalesce(func.sum(Sale.tax_cents), 0).label("tax_cents"),
         )
         .group_by(Sale.channel)
-        .order_by(func.sum(Sale.sale_price_cents).desc())
+        .order_by(func.coalesce(func.sum(Sale.sale_price_cents), 0).desc())
         .all()
     )
 
     channel_rows = []
-    for channel, units, gross_cents, ship_cents, fee_cents, tax_cents in rows:
-        gross = (gross_cents or 0) / 100.0
-        shipping = (ship_cents or 0) / 100.0
-        fees = (fee_cents or 0) / 100.0
-        tax = (tax_cents or 0) / 100.0
-        net = gross + shipping - fees - tax
+    for r in rows:
+        sales    = (r.sales_cents or 0) / 100.0
+        shipping = (r.shipping_cents or 0) / 100.0
+        fees     = (r.fees_cents or 0) / 100.0
+        tax      = (r.tax_cents or 0) / 100.0
+        net      = sales + shipping - fees - tax
+
         channel_rows.append({
-            "channel": channel or "(unspecified)",
-            "units": units or 0,
-            "gross": gross,
+            "channel": r.channel or "(unknown)",
+            "count": r.count,
+            "sales": sales,
             "shipping": shipping,
             "fees": fees,
             "tax": tax,
             "net": net,
         })
 
-    return render_template("report_channels.html", channels=channel_rows)
-
+    return render_template("report_channels.html", rows=channel_rows)
 
 @app.route("/reports/aging")
 @require_perm("reports:view")
