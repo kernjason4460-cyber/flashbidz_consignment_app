@@ -1,300 +1,123 @@
-{% include "_navbar.html" %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Consignors - FlashBidz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-{% macro sort_icon(column) %}
-    {% if sort_by == column %}
-        {% if sort_dir == 'asc' %}
-            ▲
-        {% else %}
-            ▼
-        {% endif %}
-    {% else %}
-        ▾
-    {% endif %}
-{% endmacro %}
-
-<main class="page">
-    <div class="actions-bar">
-      <h1>Consignors</h1>
-      <a class="btn" href="{{ url_for('consignor_create') }}">+ New Consignor</a>
-    <a class="btn"
-   href="{{ url_for(
-            'export_consignors',
-            q=search,
-            missing_dl='1' if missing_dl else '',
-            sort_by=sort_by,
-            sort_dir=sort_dir
-         ) }}"
-   style="margin-left: 10px;
-          background-color: #e60000;
-          color: white;
-          padding: 6px 12px;
-          border-radius: 4px;
-          font-weight: bold;
-          border: none;">
-  Export Current Results (CSV)
-</a>
-{% if missing_dl %}
-    <a class="btn"
-       href="{{ url_for(
-                'consignors_list',
-                search=search,
-                sort_by=sort_by,
-                sort_dir=sort_dir
-            ) }}"
-       style="margin-left: 10px;
-              background-color: #000000;
-              color: white;
-              padding: 6px 12px;
-              border-radius: 4px;
-              border: 2px solid #e60000;
-              font-weight: bold;">
-        Show All Consignors
-    </a>
-{% else %}
-  {% if summary and summary.missing_dl %}
-  <div style="
-      background:#330000;
-      color:#fff;
-      padding:10px 14px;
-      border-left:4px solid #e00000;
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      margin:0;
+      background:#f6f7f9;
+    }
+    main {
+      padding:24px;
+      max-width:1100px;
+      margin:0 auto;
+    }
+    h1 {
+      margin:0 0 16px;
+      font-size:28px;
+      font-weight:700;
+    }
+    table {
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 6px 20px rgba(0,0,0,.06);
+    }
+    th, td {
+      padding:12px 14px;
+      border-bottom:1px solid #eee;
+      text-align:left;
+      font-size:15px;
+    }
+    th {
+      background:#fafafa;
+      font-weight:700;
+    }
+    .btn {
+      display:inline-block;
+      padding:8px 14px;
       border-radius:8px;
-      margin:0 0 20px 0;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      flex-wrap:wrap;
-  ">
-    <div style="font-size:14px;">
-      <strong>{{ summary.missing_dl }}</strong> consignor{{ summary.missing_dl != 1 and 's' or '' }}
-      are missing a driver’s license image.
-    </div>
+      text-decoration:none;
+      font-size:14px;
+      font-weight:600;
+      color:white;
+    }
+    .btn-edit { background:#0077cc; }
+    .btn-delete { background:#cc0000; }
+    .btn-new {
+      background:#e60000;
+      margin-bottom:16px;
+      color:white;
+      padding:10px 18px;
+      display:inline-block;
+      border-radius:8px;
+      font-weight:700;
+      text-decoration:none;
+      font-size:15px;
+    }
+    .delete-form {
+      display:inline;
+    }
+  </style>
+</head>
 
-    <div style="display:flex; gap:8px; margin-top:6px;">
-      <a href="{{ url_for('consignors_list',
-                          q=q,
-                          sort_by=sort_by,
-                          sort_dir=sort_dir,
-                          missing_dl=1) }}"
-         style="
-           background:#e00000;
-           color:#fff;
-           padding:6px 10px;
-           border-radius:4px;
-           text-decoration:none;
-           font-size:13px;
-           font-weight:600;
-         ">
-        View only missing licenses
-      </a>
+<body>
+  {% include "_navbar.html" %}
 
-      {% if missing_dl %}
-      <a href="{{ url_for('consignors_list',
-                          q=q,
-                          sort_by=sort_by,
-                          sort_dir=sort_dir) }}"
-         style="
-           background:#555;
-           color:#fff;
-           padding:6px 10px;
-           border-radius:4px;
-           text-decoration:none;
-           font-size:13px;
-         ">
-        Show all consignors
-      </a>
-      {% endif %}
-    </div>
-  </div>
-  {% endif %}
-    <a class="btn"
-       href="{{ url_for(
-                'consignors_list',
-                search=search,
-                missing_dl='1',
-                sort_by=sort_by,
-                sort_dir=sort_dir
-            ) }}"
-       style="margin-left: 10px;
-              background-color: #e60000;
-              color: white;
-              padding: 6px 12px;
-              border-radius: 4px;
-              font-weight: bold;">
-        Show Only Missing DL
-    </a>
-{% endif %}
+  <main>
+    <h1>Consignors</h1>
 
-    </div>
-  {% if summary %}
-  <div style="display:flex; flex-wrap:wrap; gap:16px; margin:12px 0 20px 0;">
+    <a class="btn-new" href="{{ url_for('consignor_create') }}">+ Add New Consignor</a>
 
-    <div style="background:#000; color:#fff; padding:10px 14px;
-                border-left:4px solid #e00000; border-radius:6px; min-width:180px;">
-      <div style="font-size:12px; opacity:0.8;">Total Consignors</div>
-      <div style="font-size:22px; font-weight:bold;">
-        {{ summary.total_consignors }}
-      </div>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Items</th>
+          <th>Commission</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th style="width:150px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
 
-    <div style="background:#000; color:#fff; padding:10px 14px;
-                border-left:4px solid #e00000; border-radius:6px; min-width:180px;">
-      <div style="font-size:12px; opacity:0.8;">Missing License on File</div>
-      <div style="font-size:22px; font-weight:bold;">
-        {{ summary.missing_dl }}
-      </div>
-    </div>
+        {% for c in consignors %}
+        <tr>
+          <td>{{ c.name }}</td>
+          <td>{{ c.item_count }}</td>
+          <td>{{ c.commission_pct }}%</td>
+          <td>{{ c.email or '' }}</td>
+          <td>{{ c.phone or '' }}</td>
 
-    <div style="background:#000; color:#fff; padding:10px 14px;
-                border-left:4px solid #e00000; border-radius:6px; min-width:220px;">
-      <div style="font-size:12px; opacity:0.8;">Total Advance Balance</div>
-      <div style="font-size:22px; font-weight:bold;">
-        ${{ "%.2f"|format(summary.total_advance) }}
-      </div>
-    </div>
+          <td>
+            <a class="btn btn-edit" href="{{ url_for('consignors_edit', cid=c.id) }}">Edit</a>
 
-  </div>
-  {% endif %}
-
-        <!-- Search Bar -->
-       <form method="get"
-      action="{{ url_for('consignors_list') }}"
-      class="search-form"
-      style="margin-top: 10px;">
-
-  <input type="text"
-         name="q"
-         placeholder="Search by name, email, or phone"
-         value="{{ search or '' }}"
-         style="padding: 4px; width: 250px;">
-
-  <label style="margin-left: 10px; font-size: 0.9em;">
-    <input type="checkbox"
-           name="missing_dl"
-           value="1"
-           {% if missing_dl %}checked{% endif %}>
-    Only show missing DL
-  </label>
-
-  <button type="submit" style="padding: 4px 10px;">Search</button>
-
-  <a href="{{ url_for('consignors_list') }}" style="margin-left: 10px;">Clear</a>
-</form>
-
-        <!-- End Search Bar -->
-
-    </div>
-
-    {% if consignors %}
-        <table>
-            <thead>
-  <tr>
-    <th>
-      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=name&sort_dir={{ 'desc' if sort_by == 'name' and sort_dir == 'asc' else 'asc' }}">
-        Name {{ sort_icon('name') }}
-      </a>
-    </th>
-
-    <th>
-      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=email&sort_dir={{ 'desc' if sort_by == 'email' and sort_dir == 'asc' else 'asc' }}">
-        Email {{ sort_icon('email') }}
-      </a>
-    </th>
-
-    <th>
-      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=phone&sort_dir={{ 'desc' if sort_by == 'phone' and sort_dir == 'asc' else 'asc' }}">
-        Phone {{ sort_icon('phone') }}
-      </a>
-    </th>
-
-    <th>
-      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=commission_pct&sort_dir={{ 'desc' if sort_by == 'commission_pct' and sort_dir == 'asc' else 'asc' }}">
-        Commission % {{ sort_icon('commission_pct') }}
-      </a>
-    </th>
-
-    <th>
-      <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by=advance_balance&sort_dir={{ 'desc' if sort_by == 'advance_balance' and sort_dir == 'asc' else 'asc' }}">
-        Advance Balance ($) {{ sort_icon('advance_balance') }}
-      </a>
-    </th>
-
-    <!-- Leave these non-sortable -->
-    <th>DL</th>
-    <th>Actions</th>
-  </tr>
-</thead>
-
-
- <tbody>
-  {% for c in consignors %}
-    <tr>
-      <!-- NAME: link to consignor detail -->
-      <td>
-        <a href="{{ url_for('consignor_detail', consignor_id=c.id) }}">
-          {{ c.name }}
-        </a>
-      </td>
-
-      <!-- EMAIL -->
-      <td>{{ c.email or "-" }}</td>
-
-      <!-- PHONE -->
-      <td>{{ c.phone or "-" }}</td>
-
-      <!-- COMMISSION % -->
-      <td>
-        {{ "%.2f"|format(c.commission_pct or 0) }}%
-      </td>
-
-      <!-- ADVANCE BALANCE -->
-      <td>
-        ${{ "%.2f"|format(c.advance_balance or 0) }}
-      </td>
-
-      <!-- DL THUMBNAIL (whatever you already had here) -->
-      <td>
-        {% if c.license_image %}
-          <img src="/static/uploads/licenses/{{ c.license_image }}"
-               alt="DL"
-               style="height:32px; width:auto; border-radius:3px;">
+            <form class="delete-form"
+                  method="post"
+                  action="{{ url_for('consignors_delete', cid=c.id) }}"
+                  onsubmit="return confirm('Delete {{ c.name }}? This cannot be undone.');">
+              <button class="btn btn-delete" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
         {% else %}
-          <span style="color:#e60000; font-weight:bold;">No DL</span>
-        {% endif %}
-      </td>
-    </tr>
-  {% endfor %}
-</tbody>
-
-    </table>
-    <!-- Pagination summary -->
-    <div style="margin-top: 10px; font-size: 13px; color: #555;">
-        Showing {{ start_index }}–{{ end_index }} of {{ total }} consignors
-    </div>
-
-    <!-- Pagination controls -->
-    {% if total_pages > 1 %}
-    <div style="margin-top: 6px; font-size: 13px;">
-        {% if page > 1 %}
-            <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}&page={{ page - 1 }}"
-               style="margin-right: 6px;">« Prev</a>
-        {% endif %}
-
-        {% for p in range(1, total_pages + 1) %}
-            {% if p == page %}
-                <span style="margin: 0 3px; font-weight: bold;">{{ p }}</span>
-            {% else %}
-                <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}&page={{ p }}"
-                   style="margin: 0 3px;">{{ p }}</a>
-            {% endif %}
+        <tr>
+          <td colspan="6" style="text-align:center;color:#777;padding:22px;">
+            No consignors found.
+          </td>
+        </tr>
         {% endfor %}
 
-        {% if page < total_pages %}
-            <a href="?search={{ search }}&missing_dl={{ '1' if missing_dl else '' }}&sort_by={{ sort_by }}&sort_dir={{ sort_dir }}&page={{ page + 1 }}"
-               style="margin-left: 6px;">Next »</a>
-        {% endif %}
-    </div>
-    {% endif %}
-  {% else %}
-    <p>No consignors yet.</p>
-  {% endif %}
-</main>
+      </tbody>
+    </table>
+  </main>
+
+</body>
+</html>
