@@ -4,7 +4,15 @@
 {% block content %}
 <h1>Fast &amp; Slow Movers</h1>
 <p>Based on days between listing and sale date.</p>
-
+<p>
+  <a class="btn"
+     href="{{ url_for('report_movers',
+                      start=summary.start,
+                      end=summary.end,
+                      export='csv') }}">
+    Export CSV
+  </a>
+</p>
 <h2>Fastest Sellers (Top 20)</h2>
 <table class="table">
   <thead>
