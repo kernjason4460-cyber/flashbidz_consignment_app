@@ -19,7 +19,7 @@ from flask_login import login_required, current_user
 from flask import Flask, request, session, redirect, url_for, render_template, flash, current_app, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
-from sqlalchemy import func
+from sqlalchemy import func, literal
 from werkzeug.utils import secure_filename
 from PIL import Image
 from flask import send_from_directory
@@ -1563,25 +1563,63 @@ def report_consignors():
 def report_channels():
     """
     Show performance by sale channel using the Sale table.
-    Channels might be: auction, store, ebay, etc.
+    Safe even if some money fields don't exist on the Sale model.
     """
-    # Simple totals over all time (keeps things safe)
+
+    # Figure out which columns actually exist on the Sale model
+    has_price_cents  = hasattr(Sale, "sale_price_cents")
+    has_ship_cents   = hasattr(Sale, "shipping_fee_cents")
+    has_fee_cents    = hasattr(Sale, "marketplace_fee_cents")
+    has_tax_cents    = hasattr(Sale, "tax_cents")
+
+    # Base columns (always exist)
+    base_channel = Sale.channel.label("channel")
+    base_count   = func.count(Sale.id).label("count")
+
+    # Optional money columns – fall back to literal(0) if missing
+    sales_col = (
+        func.coalesce(func.sum(getattr(Sale, "sale_price_cents")), 0).label("sales_cents")
+        if has_price_cents else
+        literal(0).label("sales_cents")
+    )
+
+    shipping_col = (
+        func.coalesce(func.sum(getattr(Sale, "shipping_fee_cents")), 0).label("shipping_cents")
+        if has_ship_cents else
+        literal(0).label("shipping_cents")
+    )
+
+    fees_col = (
+        func.coalesce(func.sum(getattr(Sale, "marketplace_fee_cents")), 0).label("fees_cents")
+        if has_fee_cents else
+        literal(0).label("fees_cents")
+    )
+
+    tax_col = (
+        func.coalesce(func.sum(getattr(Sale, "tax_cents")), 0).label("tax_cents")
+        if has_tax_cents else
+        literal(0).label("tax_cents")
+    )
+
+    # Build the query using the columns we just defined
     rows = (
         db.session.query(
-            Sale.channel.label("channel"),
-            func.count(Sale.id).label("count"),
-            func.coalesce(func.sum(Sale.sale_price_cents), 0).label("sales_cents"),
-            func.coalesce(func.sum(Sale.shipping_fee_cents), 0).label("shipping_cents"),
-            func.coalesce(func.sum(Sale.marketplace_fee_cents), 0).label("fees_cents"),
-            func.coalesce(func.sum(Sale.tax_cents), 0).label("tax_cents"),
+            base_channel,
+            base_count,
+            sales_col,
+            shipping_col,
+            fees_col,
+            tax_col,
         )
-        .group_by(Sale.channel)
-        .order_by(func.coalesce(func.sum(Sale.sale_price_cents), 0).desc())
+        .group_by(base_channel)
+        .order_by(base_count.desc())
         .all()
     )
 
     channel_rows = []
     for r in rows:
+        # All money values are treated as cents; if the real columns
+        # weren't present, they're just 0 from literal(0).
         sales    = (r.sales_cents or 0) / 100.0
         shipping = (r.shipping_cents or 0) / 100.0
         fees     = (r.fees_cents or 0) / 100.0
@@ -1590,16 +1628,15 @@ def report_channels():
 
         channel_rows.append({
             "channel": r.channel or "(unknown)",
-            "count": r.count,
-            "sales": sales,
+            "count":   r.count,
+            "sales":   sales,
             "shipping": shipping,
-            "fees": fees,
-            "tax": tax,
-            "net": net,
+            "fees":    fees,
+            "tax":     tax,
+            "net":     net,
         })
 
     return render_template("report_channels.html", rows=channel_rows)
-
 @app.route("/reports/aging")
 @require_perm("reports:view")
 def report_aging():
