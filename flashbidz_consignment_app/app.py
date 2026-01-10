@@ -99,6 +99,13 @@ if not _secret:
     _secret = os.urandom(32).hex()
 app.config["SECRET_KEY"] = _secret
 
+# 🔐 Share login across all flashbidz.net subdomains (admin + store)
+app.config.update(
+    SESSION_COOKIE_DOMAIN=".flashbidz.net",
+    SESSION_COOKIE_SECURE=True,      # requires https (you have https on Render/custom domain)
+    SESSION_COOKIE_SAMESITE="Lax"
+)
+
 # Folder for driver's license images (under /static/licenses)
 LICENSE_UPLOAD_FOLDER = os.path.join(app.root_path, "static", "licenses")
 os.makedirs(LICENSE_UPLOAD_FOLDER, exist_ok=True)
@@ -810,7 +817,16 @@ def sale_price(self): return (self.sale_price_cents or 0) / 100
 def login():
     return render_template("login.html")
 
-
+@app.get("/me")
+def me():
+    if session.get("user_id"):
+        return {
+            "logged_in": True,
+            "username": session.get("username"),
+            "role": session.get("role")
+        }
+    return {"logged_in": False}, 401
+    
 @app.post("/login")
 def login_post():
     username = (request.form.get("username") or "").strip()
