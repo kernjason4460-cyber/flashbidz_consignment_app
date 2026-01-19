@@ -28,6 +28,13 @@ import urllib.request
 import time
 import re
 import zipfile
+import stripe
+
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_MODE = os.environ.get("STRIPE_MODE", "test")  # test or live
+if not STRIPE_SECRET_KEY:
+    app.logger.warning("STRIPE_SECRET_KEY is NOT set")
+    stripe.api_key = STRIPE_SECRET_KEY
 
 # ---- Permission decorator (only admins or explicit perms) ----
 def require_perm(perm_name):
