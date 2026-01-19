@@ -7,3 +7,4 @@ pillow
 python-barcode
 python-dateutil
 psycopg2-binary==2.9.10
+stripe==9.4.0
